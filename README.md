@@ -3,7 +3,7 @@
 > [!WARNING]
 > The script only supports `aarch64`. It will terminate immediately if run on a different architecture.
 
-DebDroid provides a lightweight and minimal debian chroot environment for Android devices. It manages an isolated, native Debian, linux-like userland without depending on Termux or additional user-space layers. It's ideal for power users, developers, and tinkerers who want to run a sandboxed Debian environment as close to the actual Android system.
+DebDroid provides a lightweight and minimal Debian chroot environment for Android devices. It manages an isolated, native Debian, Linux-like userland without depending on Termux or additional user-space layers. It's ideal for power users, developers, and tinkerers who want to run a sandboxed Debian environment as close to the actual Android system.
 
 ![Debian running on Android](debian.jpg)
 
@@ -11,7 +11,7 @@ DebDroid provides a lightweight and minimal debian chroot environment for Androi
 
 - Small and portable.
 - No external dependencies.
-- Runs a minimal Debian linux userland in a isolated chroot environment.
+- Runs a minimal Debian Linux userland in a isolated chroot environment.
 - Mounts key Android system paths to provide near-native Linux functionality.
 - Employs `unshare` to isolate Android mountpoints from the chroot environment.
 - Supports `/dev` overlayfs, creating a writable layer over device files without modifying the real `/dev`.
@@ -41,11 +41,11 @@ Alternatively, you can use a free alternative to Root Explorer, such as [Explore
 
 ### Step 1: Downloading and Extracting the Project
 
-1. Download the project zip file: [DebDroid.zip](https://github.com/NICUP14/DebDroid/archive/refs/heads/main.zip).
-2. Locate `DebDroid.zip` in your `Download` folder (`/sdcard/Download`).
-3. Extract the `DebDroid.zip` archive inside the `Download` folder. You can use an application such as `Root Explorer` or `MiXplorer` for this task.
+1. Download the project zip file: [DebDroid-main.zip](https://github.com/NICUP14/DebDroid/archive/refs/heads/main.zip).
+2. Locate `DebDroid-main.zip` in your `Download` folder (`/sdcard/Download`).
+3. Extract the `DebDroid-main.zip` archive inside the `Download` folder. You can use an application such as `Root Explorer` or `MiXplorer` for this task.
 
-After extraction, you should have a folder named DebDroid in your `Download` folder.
+After extraction, you should have a folder named `DebDroid-main` in your `Download` folder.
 
 ### Step 2: Installing DebDroid
 
@@ -54,7 +54,7 @@ After extraction, you should have a folder named DebDroid in your `Download` fol
 
 ```bash
 su
-cd /sdcard/Download/DebDroid
+cd /sdcard/Download/DebDroid-main
 sh install.sh
 ```
 
