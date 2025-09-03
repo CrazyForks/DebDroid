@@ -25,6 +25,12 @@ DebDroid provides a lightweight and minimal Debian chroot environment for Androi
 
 The software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and noninfringement. In no event shall the authors or copyright holders be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the software or the use or other dealings in the software.
 
+## Security implications
+
+### RNG and Cryptography
+
+This project patches certain system utilities, providing compatibility with the Android system by overriding Linux's randomness mechanisms, such as the `getrandom` syscall, `getentropy` function and glibc’s `arc4random` functions. It replaces the default cryptographic randomness with direct `/dev/urandom` reads. This is generally safe on modern Linux/Android, because the kernel ensures `/dev/urandom` provides high-quality entropy.
+
 ## Installation Guide
 
 This guide is written for novice users. You only need basic knowledge of Android, like installing apps from unknown sources, extracting an archive, and a little experience using a terminal (command line).
@@ -67,7 +73,7 @@ After that, DebDroid is ready to use!
 
 ## Quickstart Guide
 
-DebDroid lets you run Debian Linux on Android in a safe, isolated chroot environment.
+### DebDroid Hierarchy
 
 ```txt
 /sdcard/debdroid/
@@ -80,6 +86,17 @@ DebDroid lets you run Debian Linux on Android in a safe, isolated chroot environ
     └── apt.sh        # Patch for apt networking issues
 ```
 
+```txt
+/data/local/debdroid/
+├── bin   # External binaries
+├── lib   # External libraries
+└── mnt   # Debian mount point
+```
+
+Programs stored in `bin` can be run directly inside the chroot as it is mounted and appended to `$PATH`. Libraries placed inside `lib` will be automatically preloaded, allowing for custom overrides and patches without any modifications to Linux system files.
+
+### Running Interactive Sessions
+
 1. Open the `Terminal Emulator` app.
 2. Type the following commands, pressing Enter after each one:
 
@@ -90,21 +107,33 @@ sh /sdcard/debdroid/debdroid.sh
 
 This launches the environment and gives you a shell inside Debian.
 
-You can also run a specific command directly:
+Inside the chroot shell, users can execute the `exit` command to leave the environment and automatically unmount the filesystems.
+
+### Running Single Commands
+
+You can run a specific command inside the chroot without starting an interactive shell.
+
+For example:
 
 ```bash
 su
 sh /sdcard/debdroid/debdroid.sh apt update
 ```
 
-If you encounter issues inside the chroot, DebDroid includes patch scripts in `/sdcard/debdroid/patch`.
+This will execute the `apt update` command directly in the chroot environment.
+
+## Patching
+
+If certain utilities or packages don’t work correctly inside the chroot, you can apply the provided patch scripts located in `/sdcard/debdroid/patch`.
+
+Run a patch script like this:
 
 ```bash
 su
 sh /sdcard/debdroid/debdroid.sh sh /sdcard/debdroid/patch/<script>
 ```
 
-Inside the chroot shell, users can execute the `exit` command to leave the environment and automatically unmount the filesystems.
+These scripts fix common problems, such as networking issues or other environment-specific quirks.
 
 ## Notes
 
@@ -115,6 +144,7 @@ The Debian root filesystem (`debian.img`) in DebDroid has a fixed size. If you n
 ```bash
 su
 truncate -s +500M /sdcard/debdroid/img/debian.img
+e2fsck -fp /sdcard/debdroid/img/debian.img
 resize2fs /sdcard/debdroid/img/debian.img
 ```
 
@@ -143,14 +173,9 @@ usermod -aG inet <username>
 
 After this, the user should be able to use networking commands like `ping`.
 
-## Known Issues
+## Patched Programs
 
-### GnuPg
+The following programs have been analyzed and patched to run properly within the DebDroid chroot environment:
 
-Generating GPG keys inside DebDroid will fail due to an unresolved bug when running `gpg` within the chroot environment.
-
-```txt
-root@debian:/# gpg --gen-key
-gpg: agent_genkey failed: End of file
-Key generation failed: End of file
-```
+- `gpg` – GNU Privacy Guard
+- `sshd` – OpenSSH server

@@ -36,10 +36,10 @@ fi
 
 echo "$0: Populating $DEBDROID_HOME..."
 mkdir -p "$DEBDROID_HOME"
-mkdir -p "$DEBDROID_HOME"/bin "$DEBDROID_HOME"/mnt
+mkdir -p "$DEBDROID_HOME"/bin "$DEBDROID_HOME"/mnt "$DEBDROID_HOME"/lib
 
 cp ./bin/* "$DEBDROID_HOME"/bin
-chmod 755 "$DEBDROID_HOME"/bin/busybox
+cp ./lib/* "$DEBDROID_HOME"/lib
 
 echo "$0: Populating $DEBDROID_SDHOME..."
 mkdir -p "$DEBDROID_SDHOME"

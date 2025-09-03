@@ -10,4 +10,4 @@ fi
 . /sdcard/debdroid/debdroid_env.sh
 
 # shellcheck disable=SC2068
-sh "$DEBDROID_SDHOME"/debdroid_mgr.sh "$DEBDROID_IMG" "$DEBDROID_ENV" $@
+sh "$DEBDROID_SDHOME"/debdroid_mgr.sh "$DEBDROID_IMG" "$DEBDROID_ENV" "$DEBDROID_BIN" "$DEBDROID_LIB" $@

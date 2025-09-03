@@ -59,21 +59,41 @@ start_environment()
     mkdir -p "$DEBDROIDMGR_ENV"/dev/shm
     ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/dev/shm && $BUSYBOX mount -o rw,nosuid,nodev,mode=1777 -t tmpfs tmpfs "$DEBDROIDMGR_ENV"/dev/shm
 
-    # Mounts the /sdcard filesystem
-    mkdir -p "$DEBDROIDMGR_ENV"/sdcard
-    ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/sdcard && $BUSYBOX mount -t sdcardfs /sdcard "$DEBDROIDMGR_ENV"/sdcard
-
     # Mounts the /sys filesystem
     mkdir -p "$DEBDROIDMGR_ENV"/sys
     ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/sys && $BUSYBOX mount -r -t sysfs /sys "$DEBDROIDMGR_ENV"/sys
+
+    # Mounts the /tmp filesystem
+    mkdir -p "$DEBDROIDMGR_ENV"/tmp
+    ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/tmp && $BUSYBOX mount -t tmpfs -o mode=1777,size=64M tmpfs "$DEBDROIDMGR_ENV"/tmp
 
     # Mounts the /system filesystem
     mkdir -p "$DEBDROIDMGR_ENV"/system
     ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/system && $BUSYBOX mount -r /system "$DEBDROIDMGR_ENV"/system
 
-    # Mounts the /tmp filesystem
-    mkdir -p "$DEBDROIDMGR_ENV"/tmp
-    ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/tmp && $BUSYBOX mount -t tmpfs -o mode=1777,size=64M tmpfs "$DEBDROIDMGR_ENV"/tmp
+    # Mounts the /sdcard filesystem
+    mkdir -p "$DEBDROIDMGR_ENV"/sdcard
+    ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/sdcard && $BUSYBOX mount --bind /sdcard "$DEBDROIDMGR_ENV"/sdcard
+
+    # Mounts the /debdroid/bin directory
+    mkdir -p "$DEBDROIDMGR_ENV"/debdroid/bin
+    ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/debdroid/bin && $BUSYBOX mount --bind "$DEBDROIDMGR_BIN" "$DEBDROIDMGR_ENV"/debdroid/bin
+    chmod 755 "$DEBDROIDMGR_ENV"/debdroid/bin/*
+    chmod +x "$DEBDROIDMGR_ENV"/debdroid/bin/*
+    chown root:root "$DEBDROIDMGR_ENV"/debdroid/bin
+
+    # Mounts the /debdroid/lib directory
+    mkdir -p "$DEBDROIDMGR_ENV"/debdroid/lib
+    ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/debdroid/lib && $BUSYBOX mount --bind "$DEBDROIDMGR_LIB" "$DEBDROIDMGR_ENV"/debdroid/lib
+    chmod 644 "$DEBDROIDMGR_ENV"/debdroid/lib/*
+    chown root:root "$DEBDROIDMGR_ENV"/debdroid/lib
+
+    # Registers debdroid libraries in /etc/ld.so.preload
+    true > "$DEBDROIDMGR_ENV"/etc/ld.so.preload
+    for lib in "$DEBDROIDMGR_ENV"/debdroid/lib/*.so; do
+        # shellcheck disable=SC2046
+        echo /debdroid/lib/$(basename "$lib") > "$DEBDROIDMGR_ENV"/etc/ld.so.preload
+    done
 
     # Reserves 250MB for shared memory
     $BUSYBOX sysctl -w kernel.shmmax=268435456
@@ -93,31 +113,27 @@ start_environment()
 
     # Sets the appropriate environment variables
     export TMPDIR=/tmp
-    export PATH=/usr/bin:/usr/sbin:/bin:/usr/local/bin:/usr/local/sbin:/system/bin:"$PATH"
+    export PATH=/usr/bin:/usr/sbin:/bin:/usr/local/bin:/usr/local/sbin:/system/bin:/debdroid/bin:"$PATH"
 }
 
 # Unmounts the chroot environment
 stop_environment()
 {
     # Unmounts previously mounted filesystems
-    for mount_point in tmp system sys sdcard mnt/dev-upper dev/pts dev/shm dev proc; do
+    for mount_point in debdroid/lib debdroid/bin sdcard system tmp sys sdcard mnt/dev-upper dev/pts dev/shm dev proc; do
         if $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/$mount_point; then
             $BUSYBOX umount "$DEBDROIDMGR_ENV"/${mount_point} 2>/dev/null || $BUSYBOX umount -l "$DEBDROIDMGR_ENV"/${mount_point} 2>/dev/null
         fi
     done
 
     # Unmounts the root filesystem
-    IMG=$($BUSYBOX basename "$DEBDROIDMGR_IMG")
-    LOOP=$($BUSYBOX losetup -a | $BUSYBOX grep "$IMG" | $BUSYBOX cut -d : -f 1)
-    if [ -n "$LOOP" ]; then
-        $BUSYBOX losetup -d "$LOOP"
-    fi
+    ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV" && $BUSYBOX umount "$DEBDROIDMGR_ENV"
 }
 
 # Prints HELP Usage
 if [ $# -eq 0 ]; then
     echo "$0: A lightweight utility to create safe, isolated chroot environments."
-    echo "Usage: $0 <img> <mount-point> <command>"
+    echo "Usage: $0 <img> <mount-point> <bin-dir> <lib-dir> (<command>)?"
     exit
 fi
 
@@ -125,7 +141,7 @@ fi
 ARCH=$(getprop ro.product.cpu.abi)
 if [ "$ARCH" != "arm64-v8a" ]; then
     echo "$0: Unsupported architecture: $ARCH."
-    echo "This script only works on arm64-v8a (aarch64)."
+    echo "This script only works on arm64-v8a. (aarch64)"
     exit 1
 fi
 
@@ -134,6 +150,14 @@ if [ "$(id -u)" -ne 0 ]; then
     echo "$0: Missing required super-user permisions."
     exit 1
 fi
+
+# Checks for missing arguments
+if [ $# -lt 4 ]; then
+    echo "$0: Expected at least 4 arguments, but got $#."
+    echo "Usage: $0 <img> <mount-point> <bin-dir> <lib-dir> (<command>)?"
+    exit 1
+fi
+
 
 # Checks for popular busybox install locations
 if [ -z "$BUSYBOX" ]; then
@@ -155,7 +179,9 @@ fi
 # Configures parameters
 DEBDROIDMGR_IMG=$1
 DEBDROIDMGR_ENV=$2
-shift 2
+DEBDROIDMGR_BIN=$3
+DEBDROIDMGR_LIB=$4
+shift 4
 # shellcheck disable=SC2124
 DEBDROIDMGR_EXEC=$@
 DEBDROIDMGR_HNAME=debian
@@ -169,7 +195,7 @@ if [ -z "$DEBDROIDMGR_MARK" ]; then
 
     # Creates a private mount namespace
     # shellcheck disable=SC2086
-    if ! $BUSYBOX unshare --mount sh "$0" "$DEBDROIDMGR_IMG" "$DEBDROIDMGR_ENV" $DEBDROIDMGR_EXEC; then
+    if ! $BUSYBOX unshare --mount sh "$0" "$DEBDROIDMGR_IMG" "$DEBDROIDMGR_ENV" "$DEBDROID_BIN" "$DEBDROID_LIB" $DEBDROIDMGR_EXEC; then
         echo "$0: Failed to create a private mountpoint."
         exit 1
     fi
