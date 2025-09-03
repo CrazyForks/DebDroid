@@ -7,6 +7,10 @@ DebDroid provides a lightweight and minimal Debian chroot environment for Androi
 
 ![Debian running on Android](debian.jpg)
 
+## DebDroid is not Termux
+
+Unlike Termux or Proot, which run Linux tools via Android-compiled binaries or user-space emulation, DebDroid runs a real Debian chroot directly on Android. It ships its own programs, libraries, patches and links key Android filesystems into the Debian environment, providing near-native Linux functionality and the ability to run almost any Debian-compatible program.
+
 ## Features
 
 - Small and portable.
@@ -130,7 +134,8 @@ Run a patch script like this:
 
 ```bash
 su
-sh /sdcard/debdroid/debdroid.sh sh /sdcard/debdroid/patch/<script>
+sh /sdcard/debdroid/debdroid.sh
+sh /sdcard/debdroid/patch/<script>
 ```
 
 These scripts fix common problems, such as networking issues or other environment-specific quirks.
@@ -157,7 +162,8 @@ The `_apt` user is responsible for managing package downloads and upgrades insid
 
 ```bash
 su
-sh /sdcard/debdroid/debdroid.sh sh /sdcard/debdroid/patch/apt.sh
+sh /sdcard/debdroid/debdroid.sh
+sh /sdcard/debdroid/patch/apt.sh
 ```
 
 After running this, the `_apt` user will have the necessary permissions to perform system upgrades without errors.
