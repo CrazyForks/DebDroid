@@ -40,6 +40,7 @@ mkdir -p "$DEBDROID_HOME"/bin "$DEBDROID_HOME"/mnt "$DEBDROID_HOME"/lib
 
 cp ./bin/* "$DEBDROID_HOME"/bin
 cp ./lib/* "$DEBDROID_HOME"/lib
+chmod +x "$DEBDROID_HOME"/bin/*
 
 echo "$0: Populating $DEBDROID_SDHOME..."
 mkdir -p "$DEBDROID_SDHOME"

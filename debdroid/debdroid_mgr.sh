@@ -81,18 +81,20 @@ start_environment()
     chmod 755 "$DEBDROIDMGR_ENV"/debdroid/bin/*
     chmod +x "$DEBDROIDMGR_ENV"/debdroid/bin/*
     chown root:root "$DEBDROIDMGR_ENV"/debdroid/bin
+    chown root:root "$DEBDROIDMGR_ENV"/debdroid/bin/*
 
     # Mounts the /debdroid/lib directory
     mkdir -p "$DEBDROIDMGR_ENV"/debdroid/lib
     ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/debdroid/lib && $BUSYBOX mount --bind "$DEBDROIDMGR_LIB" "$DEBDROIDMGR_ENV"/debdroid/lib
     chmod 644 "$DEBDROIDMGR_ENV"/debdroid/lib/*
     chown root:root "$DEBDROIDMGR_ENV"/debdroid/lib
+    chown root:root "$DEBDROIDMGR_ENV"/debdroid/lib/*
 
     # Registers debdroid libraries in /etc/ld.so.preload
     true > "$DEBDROIDMGR_ENV"/etc/ld.so.preload
     for lib in "$DEBDROIDMGR_ENV"/debdroid/lib/*.so; do
         # shellcheck disable=SC2046
-        echo /debdroid/lib/$(basename "$lib") > "$DEBDROIDMGR_ENV"/etc/ld.so.preload
+        echo /debdroid/lib/$(basename "$lib") >> "$DEBDROIDMGR_ENV"/etc/ld.so.preload
     done
 
     # Reserves 250MB for shared memory
