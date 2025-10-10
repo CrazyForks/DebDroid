@@ -77,18 +77,59 @@ After that, DebDroid is ready to use!
 
 ## Quickstart Guide
 
+### Usage
+
+To display DebDroid's help page, run:
+
+```bash
+/sdcard/debdroid/debdroid.sh
+```
+
+```txt
+Usage:
+  debdroid.sh [OPTION] [SUBOPTION] [ARGUMENTS]
+
+Options:
+  run [COMMAND...]
+      Runs the default Debdroid environment.
+      If COMMAND is provided, it executes that command inside the environment.
+      If no command is given, an interactive shell is started.
+
+  list [patch|command]
+      Lists available scripts.
+      patch   - Lists all patch scripts in the patch directory.
+      command - Lists all command scripts in the command directory.
+
+  patch [PATCH_NAME]
+      Applies the specified patch script from the patch directory.
+      Example: debdroid.sh patch fix_network
+
+  command [COMMAND_NAME]
+      Executes the specified command script from the command directory.
+      Example: debdroid.sh command setup_user
+
+  resize (+|-)[SIZE]
+      Resizes the debian image relative to the specified size.
+      Example: debdroid.sh resize +2G
+
+Notes:
+  - Unrecognized options are treated the same as the 'run' option.
+```
+
 ### DebDroid Hierarchy
 
 ```txt
 /sdcard/debdroid/
-├── debdroid_env.sh   # Config file (paths, environment variables)
-├── debdroid.sh       # Main entry script
+├── debdroid_env.sh   # Config script (paths, environment variables)
+├── debdroid.sh       # Control script
 ├── debdroid_mgr.sh   # Backend script (mounts and manages chroot)
 ├── img/
 │   └── debian.img    # Debian root filesystem
-└── patch/
-    └── apt.sh        # Patch for apt networking issues
+├── patch/            # Patch scripts
+└── command/          # Command scripts
 ```
+
+Scripts placed in `patch` provide easy-to-apply fixes and tweaks for the environment's misbehaving. For more information, check out the [patching section](#patching). The ones placed in the `command` folder can be easily executed to conduct specific tasks within the chroot environment, such as updating the system or managing ssh & vnc servers (coming soon!). Consult the [running commands section](#running-commands).
 
 ```txt
 /data/local/debdroid/
@@ -113,48 +154,75 @@ This launches the environment and gives you a shell inside Debian.
 
 Inside the chroot shell, users can execute the `exit` command to leave the environment and automatically unmount the filesystems.
 
-### Running Single Commands
+### Running Commands
 
-You can run a specific command inside the chroot without starting an interactive shell.
+You can run a specific command inside the chroot without starting an interactive shell. DebDroid provides pre-made command scripts located in `/sdcard/debdroid/command`, which automate common tasks such as maintenance, setup, or service management.
 
-For example:
+To list available command scripts, run:
+
+```bash
+su
+sh /sdcard/debdroid/debdroid.sh list command
+```
+
+To execute a command script, run:
+
+```bash
+su
+sh /sdcard/debdroid/debdroid.sh command <command-name>
+```
+
+To execute other commands directly inside the chroot, run:
 
 ```bash
 su
 sh /sdcard/debdroid/debdroid.sh apt update
+# or (explicit version)
+sh /sdcard/debdroid/debdroid.sh run apt update
 ```
 
 This will execute the `apt update` command directly in the chroot environment.
 
 ## Patching
 
-If certain utilities or packages don’t work correctly inside the chroot, you can apply the provided patch scripts located in `/sdcard/debdroid/patch`.
+If certain utilities or packages don’t work correctly inside the chroot, you can apply the provided patch scripts located in /sdcard/debdroid/patch. These scripts fix common issues, such as networking problems or other environment-specific quirks.
 
-Run a patch script like this:
+To list all available patches, run:
 
 ```bash
 su
-sh /sdcard/debdroid/debdroid.sh
-sh /sdcard/debdroid/patch/<script>
+sh /sdcard/debdroid/debdroid.sh list patch
 ```
 
-These scripts fix common problems, such as networking issues or other environment-specific quirks.
+To apply a patch, run:
+
+```bash
+su
+sh /sdcard/debdroid/debdroid.sh patch <patch-name>
+```
 
 ## Notes
 
 ### Image Resizing
 
-The Debian root filesystem (`debian.img`) in DebDroid has a fixed size. If you need more space, you must manually expand the image:
+The Debian root filesystem (debian.img) in DebDroid has a fixed size. If you need more space, you can easily expand it using the built-in resize helper.
+
+The following command expands the debian environment by 500MB:
 
 ```bash
 su
-truncate -s +500M /sdcard/debdroid/img/debian.img
-e2fsck -fp /sdcard/debdroid/img/debian.img
-resize2fs /sdcard/debdroid/img/debian.img
+sh /sdcard/debdroid/debdroid.sh resize +500M
 ```
 
-- Make sure the image is not mounted while resizing.
-- Automating this process is still a work in progress.
+For additional usage instructions, run:
+
+```bash
+su
+sh /sdcard/debdroid/debdroid.sh resize
+```
+
+- Make sure the image is **not mounted** when resizing.
+- Ensure you have **enough free storage** on your device to accommodate the new image size.
 
 ### Patching Apt
 
@@ -162,8 +230,7 @@ The `_apt` user is responsible for managing package downloads and upgrades insid
 
 ```bash
 su
-sh /sdcard/debdroid/debdroid.sh
-sh /sdcard/debdroid/patch/apt.sh
+sh /sdcard/debdroid/debdroid.sh patch apt
 ```
 
 After running this, the `_apt` user will have the necessary permissions to perform system upgrades without errors.
@@ -185,3 +252,4 @@ The following programs have been analyzed and patched to run properly within the
 
 - `gpg` – GNU Privacy Guard
 - `sshd` – OpenSSH server
+- `xfce4` - XFCE4 desktop environment (coming soon!)

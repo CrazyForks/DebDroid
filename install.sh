@@ -7,7 +7,7 @@ echo '| |_| | |___| |_) | |_| |  _ <| |_| | || |_| |'
 echo '|____/|_____|____/|____/|_| \_\\\\___/___|____/ '
 echo
 echo 'DebDroid installer (https://github.com/NICUP14/DebDroid)'
-echo 'Made by NICUP14!'
+echo 'Author: NICUP14'
 echo
 
 # Checks for a matching architecture
@@ -44,9 +44,10 @@ chmod +x "$DEBDROID_HOME"/bin/*
 
 echo "$0: Populating $DEBDROID_SDHOME..."
 mkdir -p "$DEBDROID_SDHOME"
-mkdir -p  "$DEBDROID_SDHOME"/img "$DEBDROID_SDHOME"/patch
+mkdir -p  "$DEBDROID_SDHOME"/img "$DEBDROID_SDHOME"/patch "$DEBDROID_SDHOME"/command
 
 cp ./patch/* "$DEBDROID_SDHOME"/patch
+cp ./command/* "$DEBDROID_SDHOME"/command
 cp ./debdroid/* "$DEBDROID_SDHOME/"
 cat ./img/debian.img.part-* > "$DEBDROID_SDHOME"/img/debian.img
 

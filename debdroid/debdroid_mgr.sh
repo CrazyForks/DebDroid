@@ -98,7 +98,7 @@ start_environment()
     done
 
     # Reserves 250MB for shared memory
-    $BUSYBOX sysctl -w kernel.shmmax=268435456
+    $BUSYBOX sysctl -w kernel.shmmax=268435456 2>/dev/null
 
     # Creates the /etc/resolv.conf file
     true > "$DEBDROIDMGR_ENV"/etc/resolv.conf
@@ -129,7 +129,7 @@ stop_environment()
     done
 
     # Unmounts the root filesystem
-    ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV" && $BUSYBOX umount "$DEBDROIDMGR_ENV"
+    $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV" && $BUSYBOX umount "$DEBDROIDMGR_ENV"
 }
 
 # Prints HELP Usage
@@ -210,8 +210,9 @@ if [ -z "$DEBDROIDMGR_MARK" ]; then
 # Pass 2: Sets up the linux filesystem
 else
     # Defines the default chroot command
+    # Spawns an interactive session without inheriting env variables
     if [ -z "$DEBDROIDMGR_EXEC" ]; then
-        DEBDROIDMGR_EXEC="/bin/su"
+        DEBDROIDMGR_EXEC="/bin/su -"
     fi
 
     echo "$0: Starting environment: \"$DEBDROIDMGR_ENV\""
