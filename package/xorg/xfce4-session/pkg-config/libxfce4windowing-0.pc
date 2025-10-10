@@ -1,0 +1,11 @@
+prefix=/usr
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libxfce4windowing-0
+Description: X11/Wayland windowing utility library for Xfce
+Requires: gtk+-3.0
+Version: 4.20.4
+Libs: -L${libdir} -lxfce4windowing-0
+Cflags: -I${includedir}/xfce4

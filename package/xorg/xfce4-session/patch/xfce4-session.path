@@ -1,0 +1,282 @@
+diff -uNr xfce4-session-4.20.2/xfce4-session/gspawn_fix.c xfce4-session-4.20.2.mod/xfce4-session/gspawn_fix.c
+--- xfce4-session-4.20.2/xfce4-session/gspawn_fix.c	1970-01-01 01:00:00.000000000 +0100
++++ xfce4-session-4.20.2.mod/xfce4-session/gspawn_fix.c	2025-10-11 00:45:25.881192328 +0200
+@@ -0,0 +1,103 @@
++#include <spawn.h>
++#include <sys/wait.h>
++#include <string.h>
++#include <errno.h>
++#include <glib.h>
++#include <stdio.h>
++#include <unistd.h>
++
++extern char **environ;
++
++gboolean new_g_spawn_sync(
++    const gchar *working_directory,
++    gchar **argv,
++    gchar **envp,
++    GSpawnFlags flags,
++    GSpawnChildSetupFunc child_setup,
++    gpointer user_data,
++    gchar **standard_output,
++    gchar **standard_error,
++    gint *exit_status,
++    GError **error
++) {
++    pid_t pid;
++    int status;
++    int rc;
++    char **envp_to_use = envp ? envp : environ;
++
++    if (!argv || !argv[0]) {
++        g_set_error(error, G_SPAWN_ERROR, G_SPAWN_ERROR_FAILED,
++                    "new_g_spawn_sync: invalid argv");
++        return FALSE;
++    }
++
++    char *old_cwd = NULL;
++    if (working_directory) {
++        old_cwd = g_get_current_dir();
++        if (chdir(working_directory) != 0) {
++            g_set_error(error, G_SPAWN_ERROR, G_SPAWN_ERROR_FAILED,
++                        "chdir(%s) failed: %s", working_directory, g_strerror(errno));
++            g_free(old_cwd);
++            return FALSE;
++        }
++    }
++
++    rc = posix_spawn(&pid, argv[0], NULL, NULL, argv, envp_to_use);
++
++    if (working_directory && old_cwd) {
++        chdir(old_cwd);
++        g_free(old_cwd);
++    }
++
++    if (rc != 0) {
++        g_set_error(error, G_SPAWN_ERROR, G_SPAWN_ERROR_FAILED,
++                    "posix_spawn failed: %s", g_strerror(rc));
++        return FALSE;
++    }
++
++    if (waitpid(pid, &status, 0) == -1) {
++        g_set_error(error, G_SPAWN_ERROR, G_SPAWN_ERROR_FAILED,
++                    "waitpid failed: %s", g_strerror(errno));
++        return FALSE;
++    }
++
++    if (exit_status)
++        *exit_status = WEXITSTATUS(status);
++
++    if (standard_output)
++        *standard_output = g_strdup("");
++    if (standard_error)
++        *standard_error = g_strdup("");
++
++    return TRUE;
++}
++
++gboolean new_g_spawn_command_line_sync(const gchar *command_line,
++                                       gchar **standard_output,
++                                       gchar **standard_error,
++                                       gint *exit_status,
++                                       GError **error)
++{
++    gboolean res;
++    gint argc = 0;
++    gchar **argv = NULL;
++    GError *local_error = NULL;
++
++    res = g_shell_parse_argv(command_line, &argc, &argv, &local_error);
++    if (!argv) {
++        if (error) *error = local_error;
++        return FALSE;
++    }
++
++    gboolean result = new_g_spawn_sync(NULL, argv, NULL,
++                                       G_SPAWN_SEARCH_PATH,
++                                       NULL, NULL,
++                                       standard_output,
++                                       standard_error,
++                                       exit_status,
++                                       error);
++
++    g_strfreev(argv);
++    return result;
++}
++
+diff -uNr xfce4-session-4.20.2/xfce4-session/gspawn_fix.h xfce4-session-4.20.2.mod/xfce4-session/gspawn_fix.h
+--- xfce4-session-4.20.2/xfce4-session/gspawn_fix.h	1970-01-01 01:00:00.000000000 +0100
++++ xfce4-session-4.20.2.mod/xfce4-session/gspawn_fix.h	2025-10-11 00:45:25.874988110 +0200
+@@ -0,0 +1,36 @@
++#ifndef GSPAWN_FIX_H
++#define GSPAWN_FIX_H
++
++#include <glib.h>
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++gboolean new_g_spawn_sync(
++    const gchar *working_directory,
++    gchar **argv,
++    gchar **envp,
++    GSpawnFlags flags,
++    GSpawnChildSetupFunc child_setup,
++    gpointer user_data,
++    gchar **standard_output,
++    gchar **standard_error,
++    gint *exit_status,
++    GError **error
++);
++
++gboolean new_g_spawn_command_line_sync(
++    const gchar *command_line,
++    gchar **standard_output,
++    gchar **standard_error,
++    gint *exit_status,
++    GError **error
++);
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif
++
+diff -uNr xfce4-session-4.20.2/xfce4-session/xfsm-client.c xfce4-session-4.20.2.mod/xfce4-session/xfsm-client.c
+--- xfce4-session-4.20.2/xfce4-session/xfsm-client.c	2024-09-16 00:04:31.000000000 +0200
++++ xfce4-session-4.20.2.mod/xfce4-session/xfsm-client.c	2025-10-11 00:45:25.882538619 +0200
+@@ -156,7 +156,7 @@
+       xfsm_verbose ("Client Id = %s, running old discard command.\n\n",
+                     properties->client_id);
+ 
+-      g_spawn_sync (xfsm_properties_get_string (properties, SmCurrentDirectory),
++      new_g_spawn_sync (xfsm_properties_get_string (properties, SmCurrentDirectory),
+                     old_discard,
+                     xfsm_properties_get_strv (properties, SmEnvironment),
+                     G_SPAWN_SEARCH_PATH,
+@@ -486,7 +486,7 @@
+ 
+   input = g_strdup_printf ("ps -p %u -o args=", properties->pid);
+ 
+-  if (g_spawn_command_line_sync (input, &output, NULL, &exit_status, &error))
++  if (new_g_spawn_command_line_sync (input, &output, NULL, &exit_status, &error))
+     {
+       gchar **strv = g_new0 (gchar *, 2);
+ 
+@@ -520,7 +520,7 @@
+ 
+   input = g_strdup_printf ("ps -p %u -o comm=", properties->pid);
+ 
+-  if (g_spawn_command_line_sync (input, &output, NULL, &exit_status, &error))
++  if (new_g_spawn_command_line_sync (input, &output, NULL, &exit_status, &error))
+     {
+       /* remove the newline at the end of the string */
+       output[strcspn (output, "\n")] = 0;
+diff -uNr xfce4-session-4.20.2/xfce4-session/xfsm-compat-gnome.c xfce4-session-4.20.2.mod/xfce4-session/xfsm-compat-gnome.c
+--- xfce4-session-4.20.2/xfce4-session/xfsm-compat-gnome.c	2024-09-16 00:04:31.000000000 +0200
++++ xfce4-session-4.20.2.mod/xfce4-session/xfsm-compat-gnome.c	2025-10-11 00:45:25.876934012 +0200
+@@ -126,7 +126,7 @@
+   argv[0] = GNOME_KEYRING_DAEMON;
+   argv[1] = "--start";
+   argv[2] = NULL;
+-  g_spawn_sync (NULL, argv, NULL,
++  new_g_spawn_sync (NULL, argv, NULL,
+                 G_SPAWN_SEARCH_PATH | G_SPAWN_LEAVE_DESCRIPTORS_OPEN,
+                 child_setup, NULL,
+                 &sout, NULL, &status, &error);
+diff -uNr xfce4-session-4.20.2/xfce4-session/xfsm-manager.c xfce4-session-4.20.2.mod/xfce4-session/xfsm-manager.c
+--- xfce4-session-4.20.2/xfce4-session/xfsm-manager.c	2025-03-24 04:22:43.000000000 +0100
++++ xfce4-session-4.20.2.mod/xfce4-session/xfsm-manager.c	2025-10-11 00:45:25.877587530 +0200
+@@ -419,7 +419,7 @@
+                         properties->client_id, *discard_command,
+                         g_strv_length (discard_command));
+ 
+-          if (!g_spawn_sync (xfsm_properties_get_string (properties, SmCurrentDirectory),
++          if (!new_g_spawn_sync (xfsm_properties_get_string (properties, SmCurrentDirectory),
+                              discard_command,
+                              xfsm_properties_get_strv (properties, SmEnvironment),
+                              G_SPAWN_SEARCH_PATH,
+@@ -1721,7 +1721,7 @@
+           xfsm_verbose ("Client Id = %s, quit already, running shutdown command.\n\n",
+                         properties->client_id);
+ 
+-          g_spawn_sync (xfsm_properties_get_string (properties, SmCurrentDirectory),
++          new_g_spawn_sync (xfsm_properties_get_string (properties, SmCurrentDirectory),
+                         shutdown_command,
+                         xfsm_properties_get_strv (properties, SmEnvironment),
+                         G_SPAWN_SEARCH_PATH,
+diff -uNr xfce4-session-4.20.2/xfce4-session/xfsm-shutdown-fallback.c xfce4-session-4.20.2.mod/xfce4-session/xfsm-shutdown-fallback.c
+--- xfce4-session-4.20.2/xfce4-session/xfsm-shutdown-fallback.c	2025-03-23 22:33:08.000000000 +0100
++++ xfce4-session-4.20.2.mod/xfce4-session/xfsm-shutdown-fallback.c	2025-10-11 00:45:25.880756945 +0200
+@@ -180,7 +180,7 @@
+   /* run script from pm-utils */
+   command = g_strdup_printf ("/usr/bin/pm-is-supported --%s", state);
+ 
+-  ret = g_spawn_command_line_sync (command, NULL, NULL, &exit_status, &error);
++  ret = new_g_spawn_command_line_sync (command, NULL, NULL, &exit_status, &error);
+   if (!ret)
+     {
+       g_warning ("failed to run script: %s", error->message);
+@@ -380,7 +380,7 @@
+   /* Make sure we can use native shutdown commands */
+   if (xfsm_shutdown_fallback_bsd_check_auth (type))
+     {
+-      return g_spawn_command_line_sync (cmd, NULL, NULL, NULL, error);
++      return new_g_spawn_command_line_sync (cmd, NULL, NULL, NULL, error);
+     }
+ #endif
+ 
+@@ -388,7 +388,7 @@
+ #ifdef HAVE_POLKIT
+   command = g_strdup_printf ("pkexec " XFSM_SHUTDOWN_HELPER_CMD " --%s", xfsm_helper_action);
+ 
+-  ret = g_spawn_command_line_sync (command, NULL, NULL, NULL, error);
++  ret = new_g_spawn_command_line_sync (command, NULL, NULL, NULL, error);
+ 
+   g_free (command);
+ #endif
+diff -uNr xfce4-session-4.20.2/xfce4-session/xfsm-startup.c xfce4-session-4.20.2.mod/xfce4-session/xfsm-startup.c
+--- xfce4-session-4.20.2/xfce4-session/xfsm-startup.c	2024-09-16 00:04:31.000000000 +0200
++++ xfce4-session-4.20.2.mod/xfce4-session/xfsm-startup.c	2025-10-11 00:45:25.878771475 +0200
+@@ -143,7 +143,7 @@
+   gchar *variable, *value;
+   pid_t pid = -1;
+ 
+-  if (g_spawn_command_line_sync (cmd, &cmdoutput, NULL, NULL, &error))
++  if (new_g_spawn_command_line_sync (cmd, &cmdoutput, NULL, NULL, &error))
+     {
+       if (G_UNLIKELY (cmdoutput == NULL))
+         {
+@@ -206,7 +206,7 @@
+ {
+   GError *error = NULL;
+ 
+-  g_spawn_command_line_sync ("gpgconf --kill gpg-agent", NULL, NULL, NULL, &error);
++  new_g_spawn_command_line_sync ("gpgconf --kill gpg-agent", NULL, NULL, NULL, &error);
+   if (error)
+     {
+       if (!quiet)
+@@ -312,7 +312,7 @@
+             {
+               cmd = g_strdup_printf ("%s", "dbus-update-activation-environment SSH_AUTH_SOCK");
+             }
+-          g_spawn_command_line_sync (cmd, &cmdoutput, NULL, NULL, &error);
++          new_g_spawn_command_line_sync (cmd, &cmdoutput, NULL, NULL, &error);
+ 
+           if (error)
+             {
+diff -uNr xfce4-session-4.20.2/xfsm-shutdown-helper/main.c xfce4-session-4.20.2.mod/xfsm-shutdown-helper/main.c
+--- xfce4-session-4.20.2/xfsm-shutdown-helper/main.c	2024-09-16 00:04:31.000000000 +0200
++++ xfce4-session-4.20.2.mod/xfsm-shutdown-helper/main.c	2025-10-11 00:45:25.884644647 +0200
+@@ -89,7 +89,7 @@
+     {
+       envp = g_new0 (gchar *, 1);
+ 
+-      result = g_spawn_sync (NULL, argv, envp,
++      result = new_g_spawn_sync (NULL, argv, envp,
+                              G_SPAWN_SEARCH_PATH | G_SPAWN_STDOUT_TO_DEV_NULL | G_SPAWN_STDERR_TO_DEV_NULL,
+                              NULL, NULL, NULL, NULL, &status, &err);
+ 

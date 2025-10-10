@@ -9,8 +9,22 @@ fi
 # shellcheck disable=SC1091
 . /sdcard/debdroid/debdroid_env.sh
 
+debdroid_run() {
+    # shellcheck disable=SC2068
+    sh "$DEBDROID_SDHOME"/debdroid_mgr.sh "$DEBDROID_IMG" "$DEBDROID_ENV" "$DEBDROID_BIN" "$DEBDROID_LIB" $@
+}
+
+list_scripts() {
+    $BUSYBOX find "$1" -type f -name "*.sh" -print | $BUSYBOX sed 's/\.sh$//'
+}
+
+# Configures parameters
+DEBDROID_OPT=$1
+DEBDROID_SUBOPT=$2
+
 # Prints HELP Usage
-if [ $# -eq 0 ]; then
+# Handles the "help" option
+if [ "$DEBDROID_OPT" = "help" ]; then
   echo "DebDroid frontend (https://github.com/NICUP14/DebDroid)
 Author: NICUP14
 Version: $DEBDROID_VER
@@ -43,23 +57,9 @@ Options:
 
 Notes:
   - Unrecognized options are treated the same as the 'run' option."
-fi
-
-debdroid_run() {
-    # shellcheck disable=SC2068
-    sh "$DEBDROID_SDHOME"/debdroid_mgr.sh "$DEBDROID_IMG" "$DEBDROID_ENV" "$DEBDROID_BIN" "$DEBDROID_LIB" $@
-}
-
-list_scripts() {
-    $BUSYBOX find "$1" -type f -name "*.sh" -print | $BUSYBOX sed 's/\.sh$//'
-}
-
-# Configures parameters
-DEBDROID_OPT=$1
-DEBDROID_SUBOPT=$2
 
 # Handles the "run" option
-if [ "$DEBDROID_OPT" = "run"]; then
+elif [ "$DEBDROID_OPT" = "run" ]; then
     shift
     debdroid_run
 

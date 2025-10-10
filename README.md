@@ -1,7 +1,10 @@
 # DebDroid - Debian On Android
 
 > [!WARNING]
-> The script only supports `aarch64`. It will terminate immediately if run on a different architecture.
+> This project only supports `aarch64`. It will terminate immediately if run on a different architecture.
+
+> [!WARNING]
+> This project is intended for Android devices running Linux kernel `3.10` or later (released December 2017). Older kernels are likely to cause major issues and are unsupported.
 
 DebDroid provides a lightweight and minimal Debian chroot environment for Android devices. It manages an isolated, native Debian, Linux-like userland without depending on Termux or additional user-space layers. It's ideal for power users, developers, and tinkerers who want to run a sandboxed Debian environment as close to the actual Android system.
 
@@ -82,7 +85,7 @@ After that, DebDroid is ready to use!
 To display DebDroid's help page, run:
 
 ```bash
-/sdcard/debdroid/debdroid.sh
+/sdcard/debdroid/debdroid.sh help
 ```
 
 ```txt

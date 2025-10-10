@@ -92,7 +92,7 @@ start_environment()
 
     # Registers debdroid libraries in /etc/ld.so.preload
     true > "$DEBDROIDMGR_ENV"/etc/ld.so.preload
-    for lib in "$DEBDROIDMGR_ENV"/debdroid/lib/*.so; do
+    for lib in "$DEBDROIDMGR_ENV"/debdroid/lib/*.so*; do
         # shellcheck disable=SC2046
         echo /debdroid/lib/$(basename "$lib") >> "$DEBDROIDMGR_ENV"/etc/ld.so.preload
     done
