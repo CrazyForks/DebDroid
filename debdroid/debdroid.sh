@@ -61,7 +61,8 @@ Notes:
 # Handles the "run" option
 elif [ "$DEBDROID_OPT" = "run" ]; then
     shift
-    debdroid_run
+    # shellcheck disable=SC2068
+    debdroid_run $@
 
 # Handles the "list" option
 elif [ "$DEBDROID_OPT" = "list" ]; then
@@ -111,5 +112,6 @@ elif [ "$DEBDROID_OPT" = "resize" ]; then
 # Handles the unknown option case
 # Functions the same as "debdroid.sh run"
 else
-    debdroid_run
+    # shellcheck disable=SC2068
+    debdroid_run $@
 fi

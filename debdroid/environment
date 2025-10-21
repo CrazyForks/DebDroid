@@ -1,0 +1,8 @@
+#!/bin/sh
+# enviroment: DebDroid environment configuration file
+# 
+# This file is automatically sourced at the start of every DebDroid chroot session.
+# Any variables defined here will override or augment the default environment.
+# Use this file to propagate persistent environment variables.
+export TMPDIR=/tmp
+export PATH=/usr/bin:/usr/sbin:/bin:/usr/local/bin:/usr/local/sbin:/system/bin:/debdroid/bin:"$PATH"

@@ -46,9 +46,24 @@ echo "$0: Populating $DEBDROID_SDHOME..."
 mkdir -p "$DEBDROID_SDHOME"
 mkdir -p  "$DEBDROID_SDHOME"/img "$DEBDROID_SDHOME"/patch "$DEBDROID_SDHOME"/command
 
+# Ensures existence of source dir
+mkdir ./patch
+mkdir ./command
+
 cp ./patch/* "$DEBDROID_SDHOME"/patch
 cp ./command/* "$DEBDROID_SDHOME"/command
 cp ./debdroid/* "$DEBDROID_SDHOME/"
-cat ./img/debian.img.part-* > "$DEBDROID_SDHOME"/img/debian.img
 
-echo "$0: Done!"
+if [ -e "$DEBDROID_SDHOME"/img/debian.img ]; then
+    echo "$0: Refusing to overwrite \"$DEBDROID_SDHOME/img/debian.img\", skipping image creation."
+else
+    echo "$0: Creating the debian image..."
+    cat ./img/debian.img.part-* > "$DEBDROID_SDHOME"/img/debian.img
+
+    echo "$0: Enter a new size for the environment or press enter to skip this step:"
+    echo "Examples: 5G, +1G, +500M (default=1G)"
+    read -r size
+    sh -c "export DEBDROID_INSTALL=1; sh $DEBDROID_SDHOME/debdroid_resize.sh $size"
+fi
+
+echo "$0: Successfully installed DebDroid v$DEBDROID_VER!"

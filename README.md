@@ -44,6 +44,9 @@ This project patches certain system utilities, providing compatibility with the 
 
 ## Installation Guide
 
+> [!NOTE]
+> Once installed, DebDroid can be safely updated by simply re-running the install script.It performs the necessary script and package updates packages without overwriting the existing image.
+
 This guide is written for novice users. You only need basic knowledge of Android, like installing apps from unknown sources, extracting an archive, and a little experience using a terminal (command line).
 
 ### What You Need
@@ -127,9 +130,10 @@ Notes:
 
 ```txt
 /sdcard/debdroid/
-├── debdroid_env.sh   # Config script (paths, environment variables)
-├── debdroid.sh       # Control script
-├── debdroid_mgr.sh   # Backend script (mounts and manages chroot)
+├── environment       # User envrionment config
+├── debdroid_env.sh   # DebDroid environment config (paths, environment variables)
+├── debdroid.sh       # DebDroid user interface script
+├── debdroid_mgr.sh   # DebDroid backend script (mounts and manages chroot)
 ├── img/
 │   └── debian.img    # Debian root filesystem
 ├── patch/            # Patch scripts
@@ -140,12 +144,17 @@ Scripts placed in `patch` provide easy-to-apply fixes and tweaks for the environ
 
 ```txt
 /data/local/debdroid/
-├── bin   # External binaries
-├── lib   # External libraries
-└── mnt   # Debian mount point
+├── bin            # External binaries
+│   └── debinit    # DebDroid bootstrap script
+├── lib            # External libraries
+└── mnt            # Debian mount point
 ```
 
 Programs stored in `bin` can be run directly inside the chroot as it is mounted and appended to `$PATH`. Libraries placed inside `lib` will be automatically preloaded, allowing for custom overrides and patches without any modifications to Linux system files.
+
+`bin/debinit` is the DebDroid bootstrap script executed at the start of every  session. It runs specifically in the Linux userland to address persistent environment issues and quirks.
+
+For security reasons, the session spawns a clean login shell without inheriting the host's environment variables. Any required variable must be explicitly set in `debdroid/environment`, which is automatically sourced by debinit.
 
 ### Running Interactive Sessions
 
@@ -231,23 +240,11 @@ sh /sdcard/debdroid/debdroid.sh resize
 - Make sure the image is **not mounted** when resizing.
 - Ensure you have **enough free storage** on your device to accommodate the new image size.
 
-### Patching Apt
-
-The `_apt` user is responsible for managing package downloads and upgrades inside the chroot. By default, it does not have network access due to Android group restrictions. This can cause errors during `apt update` or `apt upgrade`. Fix the issue by applying the `apt.sh` patch:
-
-```bash
-su
-sh /sdcard/debdroid/debdroid.sh patch apt
-```
-
-After running this, the `_apt` user will have the necessary permissions to perform system upgrades without errors.
-
 ### User Networking
 
 Due to Android group restrictions, users inside the DebDroid chroot need to be added to the `inet` group to access networking tools.
 
 ```bash
-groupadd -g 3003 inet
 usermod -aG inet <username>
 ```
 

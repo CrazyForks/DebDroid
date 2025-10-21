@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Check if the user has root permissions 
 if [ "$(id -u)" -ne 0 ]; then
@@ -6,8 +6,4 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-# Creates group inet with gid 3003
-groupadd -g 3003 inet
-
-# Sets the _apt user's group as inet
-usermod -g 3003 _apt
+apt update && apt upgrade

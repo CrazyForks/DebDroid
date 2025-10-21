@@ -56,7 +56,8 @@ fi
 
 # shellcheck disable=SC2124
 DEBDROIDRSZ_SIZE="$@"
-if echo "$DEBDROIDRSZ_SIZE" | grep -Eq '^[+-][0-9]+([KMG]?B?)?$'; then
+
+if [ -z "$DEBDROID_INSTALL" ] && echo "$DEBDROIDRSZ_SIZE" | grep -Eq '^[+-][0-9]+([KMG]?B?)?$'; then
     echo "$0: Invalid size: $DEBDROIDRSZ_SIZE"
 fi
 

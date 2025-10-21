@@ -13,8 +13,9 @@ start_environment()
     [ ! -e "/dev/stderr" ] && ln -s /proc/self/fd/2 /dev/stderr
 
     # Links /dev/block loopback devices under /dev
+    # ?Temporary: Hard links might solve losetup-related issues
     for idx in $($BUSYBOX seq 0 7); do
-        [ ! -e /dev/loop"$idx" ] && ln -s /dev/block/loop"$idx" /dev/loop"$idx"
+        [ ! -e /dev/loop"$idx" ] && ln /dev/block/loop"$idx" /dev/loop"$idx"
     done
 
     # Prepares the image mountpoint
@@ -32,7 +33,7 @@ start_environment()
     ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/proc && $BUSYBOX mount -t proc /proc "$DEBDROIDMGR_ENV"/proc
 
     # Checks if the host has overlay support
-    if ! grep -q overlay /proc/filesystems 2>/dev/null; then
+    if ! grep -q overlay /proc/filesystems > /dev/null  2>&1; then
         echo "$0: Missing overlay support, falling back to bind-mount for /dev."
     fi
 
@@ -43,7 +44,7 @@ start_environment()
     ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/mnt/dev-upper && $BUSYBOX mount -t tmpfs tmpfs "$DEBDROIDMGR_ENV"/mnt/dev-upper
     if ! $BUSYBOX mount -t overlay overlay \
             -o lowerdir=/dev,upperdir="$DEBDROIDMGR_ENV"/mnt/dev-upper,workdir="$DEBDROIDMGR_ENV"/mnt/dev-work \
-            "$DEBDROIDMGR_ENV"/dev 2>/dev/null; then
+            "$DEBDROIDMGR_ENV"/dev > /dev/null 2>&1; then
         echo "$0: Overlay failed, falling back to bind-mount for /dev."
         $BUSYBOX mount --bind /dev "$DEBDROIDMGR_ENV"/dev
 
@@ -57,7 +58,7 @@ start_environment()
 
     # Mounts the /dev/shm filesystem
     mkdir -p "$DEBDROIDMGR_ENV"/dev/shm
-    ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/dev/shm && $BUSYBOX mount -o rw,nosuid,nodev,mode=1777 -t tmpfs tmpfs "$DEBDROIDMGR_ENV"/dev/shm
+    ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/dev/shm && $BUSYBOX mount -o rw,nosuid,nodev,noexec,mode=1777 -t tmpfs tmpfs "$DEBDROIDMGR_ENV"/dev/shm
 
     # Mounts the /sys filesystem
     mkdir -p "$DEBDROIDMGR_ENV"/sys
@@ -65,11 +66,15 @@ start_environment()
 
     # Mounts the /tmp filesystem
     mkdir -p "$DEBDROIDMGR_ENV"/tmp
-    ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/tmp && $BUSYBOX mount -t tmpfs -o mode=1777,size=64M tmpfs "$DEBDROIDMGR_ENV"/tmp
+    ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/tmp && $BUSYBOX mount -t tmpfs -o rw,nosuid,nodev,mode=1777,size=64M tmpfs "$DEBDROIDMGR_ENV"/tmp
 
-    # Mounts the /system filesystem
+    # Mounts the /system filesystem (needed by libhybris)
     mkdir -p "$DEBDROIDMGR_ENV"/system
     ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/system && $BUSYBOX mount -r /system "$DEBDROIDMGR_ENV"/system
+
+    # Mounts the /vendor filesystem (needed by libhybris)
+    mkdir -p "$DEBDROIDMGR_ENV"/vendor
+    ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/vendor && $BUSYBOX mount -r /vendor "$DEBDROIDMGR_ENV"/vendor
 
     # Mounts the /sdcard filesystem
     mkdir -p "$DEBDROIDMGR_ENV"/sdcard
@@ -98,7 +103,7 @@ start_environment()
     done
 
     # Reserves 250MB for shared memory
-    $BUSYBOX sysctl -w kernel.shmmax=268435456 2>/dev/null
+    $BUSYBOX sysctl -w kernel.shmmax=268435456 > /dev/null 2>&1
 
     # Creates the /etc/resolv.conf file
     true > "$DEBDROIDMGR_ENV"/etc/resolv.conf
@@ -107,24 +112,26 @@ start_environment()
         echo "nameserver $(getprop net.dns$server)" >> "$DEBDROIDMGR_ENV"/etc/resolv.conf
     done
 
+    # Creates a fallback for the /etc/resolv.conf file
+    if [ ! -s "$DEBDROIDMGR_ENV"/etc/resolv.conf ]; then
+        echo "$0: DNS resolution failed, falling back to nameserver 8.8.8.8"
+        echo "nameserver 8.8.8.8" >> "$DEBDROIDMGR_ENV"/etc/resolv.conf
+    fi
+
     # Creates the /etc/hosts file
     true > "$DEBDROIDMGR_ENV"/etc/hosts
     echo "127.0.0.1     localhost $DEBDROIDMGR_HNAME" >> "$DEBDROIDMGR_ENV"/etc/hosts
     echo "::1           localhost ip6-localhost ip6-loopback" >> "$DEBDROIDMGR_ENV"/etc/hosts
     $BUSYBOX hostname "$DEBDROIDMGR_HNAME"
-
-    # Sets the appropriate environment variables
-    export TMPDIR=/tmp
-    export PATH=/usr/bin:/usr/sbin:/bin:/usr/local/bin:/usr/local/sbin:/system/bin:/debdroid/bin:"$PATH"
 }
 
 # Unmounts the chroot environment
 stop_environment()
 {
     # Unmounts previously mounted filesystems
-    for mount_point in debdroid/lib debdroid/bin sdcard system tmp sys sdcard mnt/dev-upper dev/pts dev/shm dev proc; do
-        if $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/$mount_point; then
-            $BUSYBOX umount "$DEBDROIDMGR_ENV"/${mount_point} 2>/dev/null || $BUSYBOX umount -l "$DEBDROIDMGR_ENV"/${mount_point} 2>/dev/null
+    for mount_point in debdroid/lib debdroid/bin sdcard system tmp sys mnt/dev-upper dev/pts dev/shm dev proc; do
+        if $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV/$mount_point"; then
+            $BUSYBOX umount "$DEBDROIDMGR_ENV/$mount_point" > /dev/null 2>&1 || $BUSYBOX umount -l "$DEBDROIDMGR_ENV/$mount_point" > /dev/null 2>&1
         fi
     done
 
@@ -193,7 +200,7 @@ if [ -z "$DEBDROIDMGR_MARK" ]; then
     export DEBDROIDMGR_MARK=1
 
     # Makes the script trigger "stop_environment" on exit
-    trap 'stop_environment' EXIT INT TERM
+    trap 'stop_environment' EXIT HUP INT TERM QUIT PIPE
 
     # Creates a private mount namespace
     # shellcheck disable=SC2086
@@ -209,16 +216,13 @@ if [ -z "$DEBDROIDMGR_MARK" ]; then
 
 # Pass 2: Sets up the linux filesystem
 else
-    # Defines the default chroot command
-    # Spawns an interactive session without inheriting env variables
-    if [ -z "$DEBDROIDMGR_EXEC" ]; then
-        DEBDROIDMGR_EXEC="/bin/su -"
-    fi
+    # Defines the chroot command
+    : "${DEBDROIDMGR_EXEC:=/bin/su}"
 
     echo "$0: Starting environment: \"$DEBDROIDMGR_ENV\""
     start_environment
 
+    # Spawns a clean login session without inheriting env variables
     echo "$0: Running chroot command: \"$DEBDROIDMGR_EXEC\""
-    # shellcheck disable=SC2086
-    $BUSYBOX chroot "$DEBDROIDMGR_ENV" $DEBDROIDMGR_EXEC
+    $BUSYBOX chroot "$DEBDROIDMGR_ENV" /bin/su - -c "/debdroid/bin/debinit && $DEBDROIDMGR_EXEC"
 fi
