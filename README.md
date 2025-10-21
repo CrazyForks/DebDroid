@@ -10,6 +10,10 @@ DebDroid provides a lightweight and minimal Debian chroot environment for Androi
 
 ![Debian running on Android](debian.jpg)
 
+## 💬 Join the Conversation
+
+Have questions, ideas, or feedback? Then go ahead and check out **[discussions](https://github.com/NICUP14/DebDroid/discussions)**!
+
 ## DebDroid is not Termux
 
 Unlike Termux or Proot, which run Linux tools via Android-compiled binaries or user-space emulation, DebDroid runs a real Debian chroot directly on Android. It ships its own programs, libraries, patches and links key Android filesystems into the Debian environment, providing near-native Linux functionality and the ability to run almost any Debian-compatible program.
