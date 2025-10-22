@@ -1,5 +1,8 @@
 # DebDroid - Debian On Android
 
+> [!IMPORTANT]
+> Earlier versions of the project contained a critical issue in `lib/librandom.so` that prevented syscall arguments from being forwarded correctly. This fix ensures that X11, DBus, GLib, and several other programs now run properly within the Debian environment. Users are strongly encouraged to update DebDroid to the latest version. The update does not interfere with existing DebDroid setups.
+
 > [!WARNING]
 > This project only supports `aarch64`. It will terminate immediately if run on a different architecture.
 
