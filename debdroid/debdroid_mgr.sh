@@ -206,7 +206,6 @@ if [ -z "$DEBDROIDMGR_MARK" ]; then
     # shellcheck disable=SC2086
     if ! $BUSYBOX unshare --mount sh "$0" "$DEBDROIDMGR_IMG" "$DEBDROIDMGR_ENV" "$DEBDROID_BIN" "$DEBDROID_LIB" $DEBDROIDMGR_EXEC; then
         echo "$0: Failed to create a private mountpoint."
-        exit 1
     fi
 
     echo "$0: Stopping environment: \"$DEBDROIDMGR_ENV\""

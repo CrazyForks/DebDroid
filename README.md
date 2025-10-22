@@ -8,7 +8,9 @@
 
 DebDroid provides a lightweight and minimal Debian chroot environment for Android devices. It manages an isolated, native Debian, Linux-like userland without depending on Termux or additional user-space layers. It's ideal for power users, developers, and tinkerers who want to run a sandboxed Debian environment as close to the actual Android system.
 
-![Debian running on Android](debian.jpg)
+![Debian running on Android](res/debian.jpg)
+
+![Debian GUI running on Android](res/xfce4-firefox.png)
 
 ## 💬 Join the Conversation
 
@@ -250,10 +252,19 @@ usermod -aG inet <username>
 
 After this, the user should be able to use networking commands like `ping`.
 
+## Confirmed Packages
+
+- gpg
+- xorg
+- dbus-x11
+- dwm
+- xfce4
+- openssh-server
+- tigervnc-standalone-server
+
 ## Patched Programs
 
 The following programs have been analyzed and patched to run properly within the DebDroid chroot environment:
 
 - `gpg` – GNU Privacy Guard
 - `sshd` – OpenSSH server
-- `xfce4` - XFCE4 desktop environment (coming soon!)

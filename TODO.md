@@ -1,6 +1,5 @@
 # TODO List
 
-- [ ] Patch `glib`.
 - [ ] Patch `losetup`.
 - [ ] Integrate `libhybris`.
 - [ ] Add QoL commands:
