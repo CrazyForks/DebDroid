@@ -38,14 +38,8 @@ Options:
       If COMMAND is provided, it executes that command inside the environment.
       If no command is given, an interactive shell is started.
 
-  list [patch|command]
-      Lists available scripts.
-      patch   - Lists all patch scripts in the patch directory.
-      command - Lists all command scripts in the command directory.
-
-  patch [PATCH_NAME]
-      Applies the specified patch script from the patch directory.
-      Example: debdroid.sh patch fix_network
+  list
+      Lists all command scripts in the command directory.
 
   command [COMMAND_NAME]
       Executes the specified command script from the command directory.
@@ -66,31 +60,9 @@ elif [ "$DEBDROID_OPT" = "run" ]; then
 
 # Handles the "list" option
 elif [ "$DEBDROID_OPT" = "list" ]; then
-    if [ "$DEBDROID_SUBOPT" = "patch" ]; then
-        echo "Available patches:"
-        list_scripts "$DEBDROID_PATCH"
-        exit
-    elif [ "$DEBDROID_SUBOPT" = "command" ]; then
-        echo "Available commands:" 
-        list_scripts "$DEBDROID_CMD"
-        exit
-    else
-        echo "$0: Unknown option: $DEBDROID_SUBOPT."
-        exit 1
-    fi
-
-# Handles the "patch" option
-elif [ "$DEBDROID_OPT" = "patch" ]; then
-    PATCH="$DEBDROID_PATCH/$DEBDROID_SUBOPT.sh"
-    if [ ! -f "$PATCH" ]; then
-        echo "No such patch script: $PATCH." 
-        exit 1
-    fi
-
-    echo "Applying patch script: \"$PATCH\"."
-    # shellcheck disable=SC2068
-    sh "$DEBDROID_SDHOME"/debdroid_mgr.sh "$DEBDROID_IMG" "$DEBDROID_ENV" "$DEBDROID_BIN" "$DEBDROID_LIB" \
-        sh "$PATCH"
+    echo "Available commands:" 
+    list_scripts "$DEBDROID_CMD"
+    exit
 
 # Handles the "command" option
 elif [ "$DEBDROID_OPT" = "command" ]; then

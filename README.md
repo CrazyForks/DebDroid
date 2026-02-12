@@ -3,21 +3,9 @@
 > [!IMPORTANT]
 > Earlier versions of the project contained a critical issue in `lib/librandom.so` that prevented syscall arguments from being forwarded correctly. This fix ensures that X11, DBus, GLib, and several other programs now run properly within the Debian environment. Users are strongly encouraged to update DebDroid to the latest version. The update does not interfere with existing DebDroid setups.
 
-> [!WARNING]
-> This project only supports `aarch64`. It will terminate immediately if run on a different architecture.
+DebDroid repurposes your old, unused Android devices into compact Debian workstations. It offers an lightweight sandboxed Linux environment meant to replace Raspberry Pi or other single-board computers. Since it runs on top of native Android, you get a full Linux userland for a fraction of the space with no additional hardware required, making it an attractive, plug-and-play solution for developers and sysadmins who need a portable, low-maintenance server on hand.
 
-> [!WARNING]
-> This project is intended for Android devices running Linux kernel `3.10` or later (released December 2017). Older kernels are likely to cause major issues and are unsupported.
-
-DebDroid provides a lightweight and minimal Debian chroot environment for Android devices. It manages an isolated, native Debian, Linux-like userland without depending on Termux or additional user-space layers. It's ideal for power users, developers, and tinkerers who want to run a sandboxed Debian environment as close to the actual Android system.
-
-![Debian running on Android](res/debian.jpg)
-
-![Debian GUI running on Android](res/xfce4-firefox.png)
-
-## 💬 Join the Conversation
-
-Have questions, ideas, or feedback? Then go ahead and check out **[discussions](https://github.com/NICUP14/DebDroid/discussions)**!
+Check out the [photo gallery](GALLERY.md)!
 
 ## DebDroid is not Termux
 
@@ -32,16 +20,37 @@ Unlike Termux or Proot, which run Linux tools via Android-compiled binaries or u
 - Employs `unshare` to isolate Android mountpoints from the chroot environment.
 - Supports `/dev` overlayfs, creating a writable layer over device files without modifying the real `/dev`.
 
+**Linux+Android on the same device:** DebDroid manages a persistent chroot container inside Android that isolates the Linux subsystem, while keeping the underlying Android OS intact. This lets your run Linux workloads side-by-side with your regular Android apps, all without dual-boot, flashing or loss of Android functionality.
+
+**Flexible access:** You can interact with DebDroid locally through a terminal emulator, ADB or remotely via SSH, VNC, RDP and many others!
+
+**Debian environment on a Android device:** DebDroid provides a complete Linux workspace with a wide array of supported utilities so you can perform software development, system‑administration, or other tasks directly on the device without needing a separate computer.
+
+**Turn your idle Android devices into a headless server:** Whether you need a web server, CI runner, IoT gateway, or VPN endpoint, an old Android device becomes a self‑contained, energy‑efficient server that you can deploy anywhere without the hassle of wiring, power adapters, or a separate SBC.
+
 ## Requirements
 
-- A rooted Android device.
-- A minimum 1-5GB of available storage space.
+Supported Android versions:
+
+- Requires Android devices with a Linux kernel 3.10 or newer (released Dec 2017).
+- Covers devices launched in the past ~8 years, from Android 7 through Android 12.
+
+We’re actively working to extend support up to Android 14, while devices running Android 15 or newer already include native KVM‑based virtualization, making DebDroid unnecessary for those platforms.
+
+Additional requirements:
+
+- The device must be rooted.
+- You’ll need at least 1 GB of free storage (5 GB is recommended for a comfortable experience).
 
 ## Disclaimer
 
 The software is provided "as is", without warranty of any kind, express or implied, including but not limited to the warranties of merchantability, fitness for a particular purpose, and noninfringement. In no event shall the authors or copyright holders be liable for any claim, damages, or other liability, whether in an action of contract, tort, or otherwise, arising from, out of, or in connection with the software or the use or other dealings in the software.
 
 ## Security implications
+
+### Vulnerabilities
+
+Most of the older Android devices supported by DebDroid have already reached end‑of‑life (EOL), meaning they no longer receive security patches or kernel updates. That means any vulnerabilities discovered past their last system update remain unpatched, making these environments unsuitable for handling confidential data or production-grade workloads. DebDroid is intended for tasks where exposing personal information is not a concern.
 
 ### RNG and Cryptography
 
@@ -62,7 +71,7 @@ Before starting, make sure you have these apps installed on your device:
 - [Hacker's Keyboard](apk/HackersKeyboard.apk) - an advanced keyboard that makes typing commands easier.
 - [Root Explorer](https://play.google.com/store/apps/details?id=com.speedsoftware.rootexplorer&hl=en-US) - lets you browse and manage Android files.
 
-Alternatively, you can use a free alternative to Root Explorer, such as [Explorer](https://play.google.com/store/apps/details?id=com.speedsoftware.explorer&hl=en-US) or [MiXplorer](https://play.google.com/store/apps/details?id=com.mixplorer.silver).
+Alternatively, you can use a free alternative to Root Explorer, such as [Explorer](https://play.google.com/store/apps/details?id=com.speedsoftware.explorer) or [MiXplorer](https://play.google.com/store/apps/details?id=com.mixplorer.silver).
 
 ### Step 1: Downloading and Extracting the Project
 
@@ -110,14 +119,8 @@ Options:
       If COMMAND is provided, it executes that command inside the environment.
       If no command is given, an interactive shell is started.
 
-  list [patch|command]
-      Lists available scripts.
-      patch   - Lists all patch scripts in the patch directory.
-      command - Lists all command scripts in the command directory.
-
-  patch [PATCH_NAME]
-      Applies the specified patch script from the patch directory.
-      Example: debdroid.sh patch fix_network
+  list
+      Lists all command scripts in the command directory.
 
   command [COMMAND_NAME]
       Executes the specified command script from the command directory.
@@ -135,17 +138,16 @@ Notes:
 
 ```txt
 /sdcard/debdroid/
-├── environment       # User envrionment config
+├── environment       # User environment config
 ├── debdroid_env.sh   # DebDroid environment config (paths, environment variables)
 ├── debdroid.sh       # DebDroid user interface script
 ├── debdroid_mgr.sh   # DebDroid backend script (mounts and manages chroot)
 ├── img/
 │   └── debian.img    # Debian root filesystem
-├── patch/            # Patch scripts
 └── command/          # Command scripts
 ```
 
-Scripts placed in `patch` provide easy-to-apply fixes and tweaks for the environment's misbehaving. For more information, check out the [patching section](#patching). The ones placed in the `command` folder can be easily executed to conduct specific tasks within the chroot environment, such as updating the system or managing ssh & vnc servers (coming soon!). Consult the [running commands section](#running-commands).
+Scripts placed inside the `command` folder can be easily executed to conduct specific tasks within the chroot environment, such as updating the system or managing ssh & vnc servers (coming soon!). Consult the [running commands section](#running-commands).
 
 ```txt
 /data/local/debdroid/
@@ -183,7 +185,7 @@ To list available command scripts, run:
 
 ```bash
 su
-sh /sdcard/debdroid/debdroid.sh list command
+sh /sdcard/debdroid/debdroid.sh list
 ```
 
 To execute a command script, run:
@@ -203,24 +205,6 @@ sh /sdcard/debdroid/debdroid.sh run apt update
 ```
 
 This will execute the `apt update` command directly in the chroot environment.
-
-## Patching
-
-If certain utilities or packages don’t work correctly inside the chroot, you can apply the provided patch scripts located in /sdcard/debdroid/patch. These scripts fix common issues, such as networking problems or other environment-specific quirks.
-
-To list all available patches, run:
-
-```bash
-su
-sh /sdcard/debdroid/debdroid.sh list patch
-```
-
-To apply a patch, run:
-
-```bash
-su
-sh /sdcard/debdroid/debdroid.sh patch <patch-name>
-```
 
 ## Notes
 
@@ -255,6 +239,12 @@ usermod -aG inet <username>
 
 After this, the user should be able to use networking commands like `ping`.
 
+## Troubleshooting
+
+### System reboot due to XFCE4
+
+Newer releases of the XFCE4 desktop cause known problems within DebDroid environments. The issue is due to the power‑manager plugin, which assumes a traditional PC setup. This mismatch triggers excessive memory consumption, which can quickly exhaust the limited RAM on Android devices, resulting in a system reboot. To avoid this, users can either switch to a different desktop environment or window manager, or apply a patch (for example, a Magisk module) that increases the available swap space of the system.
+
 ## Confirmed Packages
 
 - gpg
@@ -264,6 +254,7 @@ After this, the user should be able to use networking commands like `ping`.
 - xfce4
 - openssh-server
 - tigervnc-standalone-server
+- onlyoffice
 
 ## Patched Programs
 
@@ -271,3 +262,8 @@ The following programs have been analyzed and patched to run properly within the
 
 - `gpg` – GNU Privacy Guard
 - `sshd` – OpenSSH server
+- `snapd` – Snap daemon (WIP)
+
+## Join the Discussions
+
+Have questions, ideas, or feedback? Then go ahead and check out **[discussions](https://github.com/NICUP14/DebDroid/discussions)**!

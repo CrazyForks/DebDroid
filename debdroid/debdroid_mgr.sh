@@ -20,7 +20,10 @@ start_environment()
 
     # Prepares the image mountpoint
     mkdir -p "$DEBDROIDMGR_ENV"
-    $BUSYBOX mount -o loop "$DEBDROIDMGR_IMG" "$DEBDROIDMGR_ENV"
+    if ! $BUSYBOX mount -o loop "$DEBDROIDMGR_IMG" "$DEBDROIDMGR_ENV"; then
+        echo "$0: Falied to mount the linux filesystem."
+        exit 1
+    fi
 
     # Copies the busybox binary
     if [ ! -f "$DEBDROIDMGR_ENV"/bin/busybox ]; then
@@ -68,13 +71,9 @@ start_environment()
     mkdir -p "$DEBDROIDMGR_ENV"/tmp
     ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/tmp && $BUSYBOX mount -t tmpfs -o rw,nosuid,nodev,mode=1777,size=64M tmpfs "$DEBDROIDMGR_ENV"/tmp
 
-    # Mounts the /system filesystem (needed by libhybris)
+    # Mounts the /system filesystem
     mkdir -p "$DEBDROIDMGR_ENV"/system
     ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/system && $BUSYBOX mount -r /system "$DEBDROIDMGR_ENV"/system
-
-    # Mounts the /vendor filesystem (needed by libhybris)
-    mkdir -p "$DEBDROIDMGR_ENV"/vendor
-    ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/vendor && $BUSYBOX mount -r /vendor "$DEBDROIDMGR_ENV"/vendor
 
     # Mounts the /sdcard filesystem
     mkdir -p "$DEBDROIDMGR_ENV"/sdcard
