@@ -161,7 +161,7 @@ Programs stored in `bin` can be run directly inside the chroot as it is mounted 
 
 `bin/debinit` is the DebDroid bootstrap script executed at the start of every  session. It runs specifically in the Linux userland to address persistent environment issues and quirks.
 
-For security reasons, the session spawns a clean login shell without inheriting the host's environment variables. Any required variable must be explicitly set in `debdroid/environment`, which is automatically sourced by debinit.
+For security reasons, the session spawns a clean login shell without inheriting the host's environment variables. Any required variable must be explicitly set in `debdroid/environment`, which is automatically sourced by `bin/debinit`.
 
 ### Running Interactive Sessions
 
@@ -243,7 +243,7 @@ After this, the user should be able to use networking commands like `ping`.
 
 ### System reboot due to XFCE4
 
-Newer releases of the XFCE4 desktop cause known problems within DebDroid environments. The issue is due to the power‑manager plugin, which assumes a traditional PC setup. This mismatch triggers excessive memory consumption, which can quickly exhaust the limited RAM on Android devices, resulting in a system reboot. To avoid this, users can either switch to a different desktop environment or window manager, or apply a patch (for example, a Magisk module) that increases the available swap space of the system.
+Newer releases of the XFCE4 desktop cause known problems within DebDroid environments. The issue is due to the power‑manager plugin, which assumes a traditional PC setup. This mismatch triggers excessive memory consumption, which can quickly exhaust the limited RAM on Android devices, resulting in a system reboot. To resolve this issue, users should look for a method that increases the available swap space of the device. Magisk-rooted users can simply flash the [`lin_os_swap_mod.zip`](apk/lin_os_swap_mod.zip) archive in the module section of the Magisk app. Special thanks to [janithcooray](https://github.com/janithcooray) for developing the mod.
 
 ## Confirmed Packages
 
@@ -254,7 +254,10 @@ Newer releases of the XFCE4 desktop cause known problems within DebDroid environ
 - xfce4
 - openssh-server
 - tigervnc-standalone-server
+- code
+- gimp
 - onlyoffice
+- wireshark
 
 ## Patched Programs
 

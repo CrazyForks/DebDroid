@@ -24,12 +24,12 @@ if ! getent group inet > /dev/null 2>&1; then
 fi
 
 # Fixes apt's networking issue
-if ! id -nG _apt > /dev/null 2>&1 | grep -qw inet; then
+if ! id -nG _apt | grep -qw inet; then
     usermod -g inet _apt
 fi
 
 # Creates missing runtime folders
-for dir in /run/ssh /run/dbus; do
+for dir in /run/sshd /run/dbus; do
     if [ ! -d "$dir" ]; then
         mkdir -p "$dir"
         chmod 755 "$dir"
