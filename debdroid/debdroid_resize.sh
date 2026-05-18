@@ -62,7 +62,7 @@ if [ -z "$DEBDROID_INSTALL" ] && echo "$DEBDROIDRSZ_SIZE" | grep -Eq '^[+-][0-9]
 fi
 
 echo "Resizing $DEBDROID_IMG to $DEBDROIDRSZ_SIZE..."
-("$DEBDROID_BIN"/truncate -s "$DEBDROIDRSZ_SIZE" "$DEBDROID_IMG" && \
+($BUSYBOX truncate -s "$DEBDROIDRSZ_SIZE" "$DEBDROID_IMG" && \
     "$DEBDROID_BIN"/e2fsck -fp "$DEBDROID_IMG" && \
     "$DEBDROID_BIN"/resize2fs "$DEBDROID_IMG" && \
     echo "Done!") || echo "Fail!"

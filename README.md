@@ -1,7 +1,7 @@
 # DebDroid - Debian On Android
 
 > [!IMPORTANT]
-> Earlier versions of the project contained a critical issue in `lib/librandom.so` that prevented syscall arguments from being forwarded correctly. This fix ensures that X11, DBus, GLib, and several other programs now run properly within the Debian environment. Users are strongly encouraged to update DebDroid to the latest version. The update does not interfere with existing DebDroid setups.
+> Earlier versions of the project (v1.0) contained a critical issue in `lib/librandom.so` that prevented syscall arguments from being forwarded correctly. This fix ensures that X11, DBus, GLib, and several other programs now run properly within the Debian environment. Users are strongly encouraged to update DebDroid to the latest version. The update does not interfere with existing DebDroid setups.
 
 DebDroid repurposes your old, unused Android devices into compact Debian workstations. It offers an lightweight sandboxed Linux environment meant to replace Raspberry Pi or other single-board computers. Since it runs on top of native Android, you get a full Linux userland for a fraction of the space with no additional hardware required, making it an attractive, plug-and-play solution for developers and sysadmins who need a portable, low-maintenance server on hand.
 
@@ -32,10 +32,10 @@ Unlike Termux or Proot, which run Linux tools via Android-compiled binaries or u
 
 Supported Android versions:
 
-- Requires Android devices with a Linux kernel 3.10 or newer (released Dec 2017).
-- Covers devices launched in the past ~8 years, from Android 7 through Android 12.
+- Requires an `aarch64` Android device running Lollipop or later (released Nov 2014).
+- Covers devices launched in the past ~12 years, from Android 5 through Android 14.
 
-We’re actively working to extend support up to Android 14, while devices running Android 15 or newer already include native KVM‑based virtualization, making DebDroid unnecessary for those platforms.
+Newer devices running Android 15 or later already include native KVM‑based virtualization, making DebDroid unnecessary for those platforms.
 
 Additional requirements:
 
@@ -243,21 +243,7 @@ After this, the user should be able to use networking commands like `ping`.
 
 ### System reboot due to XFCE4
 
-Newer releases of the XFCE4 desktop cause known problems within DebDroid environments. The issue is due to the power‑manager plugin, which assumes a traditional PC setup. This mismatch triggers excessive memory consumption, which can quickly exhaust the limited RAM on Android devices, resulting in a system reboot. To resolve this issue, users should look for a method that increases the available swap space of the device. Magisk-rooted users can simply flash the [`lin_os_swap_mod.zip`](apk/lin_os_swap_mod.zip) archive in the module section of the Magisk app. Special thanks to [janithcooray](https://github.com/janithcooray) for developing the mod.
-
-## Confirmed Packages
-
-- gpg
-- xorg
-- dbus-x11
-- dwm
-- xfce4
-- openssh-server
-- tigervnc-standalone-server
-- code
-- gimp
-- onlyoffice
-- wireshark
+Newer releases of the XFCE4 desktop cause known problems within DebDroid environments. The issue is due to the power‑manager plugin, which assumes a traditional PC setup. This mismatch triggers excessive memory consumption, which can quickly exhaust the limited RAM on Android devices, resulting in a system reboot. To resolve this issue, users should look for a method that increases the available swap space of the device. Magisk-rooted users can simply flash the [`lin_os_swap_mod.zip`](apk/lin_os_swap_mod.zip) archive in the module section of the Magisk app.
 
 ## Patched Programs
 
@@ -270,3 +256,11 @@ The following programs have been analyzed and patched to run properly within the
 ## Join the Discussions
 
 Have questions, ideas, or feedback? Then go ahead and check out **[discussions](https://github.com/NICUP14/DebDroid/discussions)**!
+
+## Credits
+
+The project wouldn't have existed without:
+
+- [Meefik](https://github.com/meefik) for maintaining the android build of `busybox`.
+- [LineageOS team](https://github.com/LineageOS) for maintaining the android build of `e2fsprogs`.
+- [Janithcooray](https://github.com/janithcooray) for developing the Magisk swap module.

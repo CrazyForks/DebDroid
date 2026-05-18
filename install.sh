@@ -46,9 +46,6 @@ echo "$0: Populating $DEBDROID_SDHOME..."
 mkdir -p "$DEBDROID_SDHOME"
 mkdir -p  "$DEBDROID_SDHOME"/img "$DEBDROID_SDHOME"/command
 
-# Ensures existence of source dir
-mkdir ./command
-
 cp ./command/* "$DEBDROID_SDHOME"/command
 cp ./debdroid/* "$DEBDROID_SDHOME/"
 
