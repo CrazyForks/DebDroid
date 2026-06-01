@@ -1,5 +1,15 @@
 #!/system/bin/sh
 
+# Debdroid Manager configuration parameters
+CONFIG_DEV_FD=yes
+CONFIG_DEV_IO=yes
+CONFIG_DEV_LOOP=yes
+CONFIG_DEBDROID_BIN=yes
+CONFIG_DEBDROID_LIB=yes
+CONFIG_ENV_FSCK=yes
+CONFIG_ENV_SHMMAX=268435456 # 250MB
+CONFIG_ENV_DNSSERVER=1.1.1.1 # Fallback dns server (Cloudflare)
+
 # Mounts the chroot environment
 start_environment()
 {
@@ -7,28 +17,56 @@ start_environment()
     $BUSYBOX mount --make-rprivate /
 
     # Links the standard streams to their file descriptor
-    [ ! -e "/dev/fd" ]     && ln -s /proc/self/fd /dev/
-    [ ! -e "/dev/stdin" ]  && ln -s /proc/self/fd/0 /dev/stdin
-    [ ! -e "/dev/stdout" ] && ln -s /proc/self/fd/1 /dev/stdout
-    [ ! -e "/dev/stderr" ] && ln -s /proc/self/fd/2 /dev/stderr
+    if [ "$CONFIG_DEV_FD" = "yes" ] && [ ! -e "/dev/fd" ]; then
+        ln -s /proc/self/fd /dev/fd
+    fi
+    if [ "$CONFIG_DEV_IO" = "yes" ]; then
+        [ ! -e "/dev/stdin" ]  && ln -s /proc/self/fd/0 /dev/stdin
+        [ ! -e "/dev/stdout" ] && ln -s /proc/self/fd/1 /dev/stdout
+        [ ! -e "/dev/stderr" ] && ln -s /proc/self/fd/2 /dev/stderr
+    fi
 
     # Links /dev/block loopback devices under /dev
-    # ?Temporary: Hard links might solve losetup-related issues
-    for idx in $($BUSYBOX seq 0 7); do
-        [ ! -e /dev/loop"$idx" ] && ln /dev/block/loop"$idx" /dev/loop"$idx"
-    done
+    if [ "$CONFIG_DEV_LOOP" = "yes" ]; then
+        for idx in $($BUSYBOX seq 0 7); do
+            [ ! -e /dev/loop"$idx" ] && ln -s /dev/block/loop"$idx" /dev/loop"$idx"
+        done
+    fi
+
+    # Ensures DEBDROIDMGR_IMG is a regular file
+    if [ ! -f "$DEBDROIDMGR_IMG" ]; then
+        echo "$0: Cannot locate debian image: \"$DEBDROIDMGR_IMG\"."
+        exit 1
+    fi
+
+    # Ensures DEBDROIDMGR_ENV is not a symlink
+    if [ -L "$DEBDROIDMGR_ENV" ]; then
+        echo "$0: Refusing to operate on a symlinked environment."
+        exit 1
+    fi
+
+    # Attempts image repair
+    if [ "$CONFIG_ENV_FSCK" = "yes" ]; then
+        echo "Attempting image repair..."
+        if ! "$DEBDROIDMGR_BIN"/e2fsck -fp "$DEBDROIDMGR_IMG"; then
+            echo "$0: Failed to repair the linux image."
+            echo "Manual user intervention is required."
+            exit 1
+        fi
+    fi
 
     # Prepares the image mountpoint
     mkdir -p "$DEBDROIDMGR_ENV"
     if ! $BUSYBOX mount -o loop "$DEBDROIDMGR_IMG" "$DEBDROIDMGR_ENV"; then
-        echo "$0: Falied to mount the linux filesystem."
+        echo "$0: Failed to mount the linux filesystem."
+        echo "Loop mounts can fail sometimes. Rerun the script."
         exit 1
     fi
 
-    # Copies the busybox binary
-    if [ ! -f "$DEBDROIDMGR_ENV"/bin/busybox ]; then
-        cp "$BUSYBOX" "$DEBDROIDMGR_ENV"/bin/busybox
-        chmod 755 "$DEBDROIDMGR_ENV"/bin/busybox
+    # Ensures DEBDROIDMGR_ENV is a valid filesystem
+    if [ ! -f "$DEBDROIDMGR_ENV/bin/sh" ]; then
+        echo "$0: Mounted image does not appear to be a valid linux filesystem."
+        exit 1
     fi
 
     # Mounts the /proc filesystem
@@ -81,28 +119,25 @@ start_environment()
 
     # Mounts the /debdroid/bin directory
     mkdir -p "$DEBDROIDMGR_ENV"/debdroid/bin
-    ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/debdroid/bin && $BUSYBOX mount --bind "$DEBDROIDMGR_BIN" "$DEBDROIDMGR_ENV"/debdroid/bin
-    chmod 755 "$DEBDROIDMGR_ENV"/debdroid/bin/*
-    chmod +x "$DEBDROIDMGR_ENV"/debdroid/bin/*
-    chown root:root "$DEBDROIDMGR_ENV"/debdroid/bin
-    chown root:root "$DEBDROIDMGR_ENV"/debdroid/bin/*
+    [ "$CONFIG_DEBDROID_BIN" = "yes" ] && \
+        ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/debdroid/bin && $BUSYBOX mount --bind "$DEBDROIDMGR_BIN" "$DEBDROIDMGR_ENV"/debdroid/bin
 
-    # Mounts the /debdroid/lib directory
+    # Mounts and preloads libs in the /debdroid/lib directory
     mkdir -p "$DEBDROIDMGR_ENV"/debdroid/lib
-    ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/debdroid/lib && $BUSYBOX mount --bind "$DEBDROIDMGR_LIB" "$DEBDROIDMGR_ENV"/debdroid/lib
-    chmod 644 "$DEBDROIDMGR_ENV"/debdroid/lib/*
-    chown root:root "$DEBDROIDMGR_ENV"/debdroid/lib
-    chown root:root "$DEBDROIDMGR_ENV"/debdroid/lib/*
-
-    # Registers debdroid libraries in /etc/ld.so.preload
     true > "$DEBDROIDMGR_ENV"/etc/ld.so.preload
-    for lib in "$DEBDROIDMGR_ENV"/debdroid/lib/*.so*; do
-        # shellcheck disable=SC2046
-        echo /debdroid/lib/$(basename "$lib") >> "$DEBDROIDMGR_ENV"/etc/ld.so.preload
-    done
+    if [ "$CONFIG_DEBDROID_LIB" = "yes" ]; then
+        ! $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV"/debdroid/lib && $BUSYBOX mount --bind "$DEBDROIDMGR_LIB" "$DEBDROIDMGR_ENV"/debdroid/lib
 
-    # Reserves 250MB for shared memory
-    $BUSYBOX sysctl -w kernel.shmmax=268435456 > /dev/null 2>&1
+        # Registers debdroid libraries in /etc/ld.so.preload
+        for lib in "$DEBDROIDMGR_ENV"/debdroid/lib/*.so*; do
+            [ -f "$lib" ] || continue # Ensures that library exists
+            # shellcheck disable=SC2046
+            echo /debdroid/lib/$(basename "$lib") >> "$DEBDROIDMGR_ENV"/etc/ld.so.preload
+        done
+    fi
+
+    # Grows the system's shared memory
+    $BUSYBOX sysctl -w kernel.shmmax="$CONFIG_ENV_SHMMAX" > /dev/null 2>&1
 
     # Creates the /etc/resolv.conf file
     true > "$DEBDROIDMGR_ENV"/etc/resolv.conf
@@ -113,22 +148,21 @@ start_environment()
 
     # Creates a fallback for the /etc/resolv.conf file
     if [ ! -s "$DEBDROIDMGR_ENV"/etc/resolv.conf ]; then
-        echo "$0: DNS resolution failed, falling back to nameserver 8.8.8.8"
-        echo "nameserver 8.8.8.8" >> "$DEBDROIDMGR_ENV"/etc/resolv.conf
+        echo "$0: DNS resolution failed, falling back to nameserver $CONFIG_ENV_DNSSERVER"
+        echo "nameserver $CONFIG_ENV_DNSSERVER" >> "$DEBDROIDMGR_ENV"/etc/resolv.conf
     fi
 
     # Creates the /etc/hosts file
     true > "$DEBDROIDMGR_ENV"/etc/hosts
-    echo "127.0.0.1     localhost $DEBDROIDMGR_HNAME" >> "$DEBDROIDMGR_ENV"/etc/hosts
+    echo "127.0.0.1     localhost $($BUSYBOX hostname)" >> "$DEBDROIDMGR_ENV"/etc/hosts
     echo "::1           localhost ip6-localhost ip6-loopback" >> "$DEBDROIDMGR_ENV"/etc/hosts
-    $BUSYBOX hostname "$DEBDROIDMGR_HNAME"
 }
 
 # Unmounts the chroot environment
 stop_environment()
 {
     # Unmounts previously mounted filesystems
-    for mount_point in debdroid/lib debdroid/bin sdcard system tmp sys mnt/dev-upper dev/pts dev/shm dev proc; do
+    for mount_point in debdroid/lib debdroid/bin sdcard system tmp dev/pts dev/shm dev mnt/dev-upper sys proc; do
         if $BUSYBOX mountpoint -q "$DEBDROIDMGR_ENV/$mount_point"; then
             $BUSYBOX umount "$DEBDROIDMGR_ENV/$mount_point" > /dev/null 2>&1 || $BUSYBOX umount -l "$DEBDROIDMGR_ENV/$mount_point" > /dev/null 2>&1
         fi
@@ -155,7 +189,7 @@ fi
 
 # Check if the user has root permissions 
 if [ "$(id -u)" -ne 0 ]; then
-    echo "$0: Missing required super-user permisions."
+    echo "$0: Missing required super-user permissions."
     exit 1
 fi
 
@@ -190,20 +224,18 @@ DEBDROIDMGR_ENV=$2
 DEBDROIDMGR_BIN=$3
 DEBDROIDMGR_LIB=$4
 shift 4
+
+# NOTE: Remains unquoted as it has to preserve flags when passed to chroot
 # shellcheck disable=SC2124
 DEBDROIDMGR_EXEC=$@
-DEBDROIDMGR_HNAME=debian
 
 # Pass 1: Sets up the private mount namespace
 if [ -z "$DEBDROIDMGR_MARK" ]; then
     export DEBDROIDMGR_MARK=1
 
-    # Makes the script trigger "stop_environment" on exit
-    trap 'stop_environment' EXIT HUP INT TERM QUIT PIPE
-
     # Creates a private mount namespace
     # shellcheck disable=SC2086
-    if ! $BUSYBOX unshare --mount sh "$0" "$DEBDROIDMGR_IMG" "$DEBDROIDMGR_ENV" "$DEBDROID_BIN" "$DEBDROID_LIB" $DEBDROIDMGR_EXEC; then
+    if ! $BUSYBOX unshare --mount sh "$0" "$DEBDROIDMGR_IMG" "$DEBDROIDMGR_ENV" "$DEBDROIDMGR_BIN" "$DEBDROIDMGR_LIB" $DEBDROIDMGR_EXEC; then
         echo "$0: Failed to create a private mountpoint."
     fi
 
@@ -217,10 +249,13 @@ else
     # Defines the chroot command
     : "${DEBDROIDMGR_EXEC:=/bin/su}"
 
+    # Makes the script trigger "stop_environment" on exit
+    trap 'stop_environment' EXIT HUP INT TERM QUIT PIPE
+
     echo "$0: Starting environment: \"$DEBDROIDMGR_ENV\""
     start_environment
 
     # Spawns a clean login session without inheriting env variables
     echo "$0: Running chroot command: \"$DEBDROIDMGR_EXEC\""
-    $BUSYBOX chroot "$DEBDROIDMGR_ENV" /bin/su - -c "/debdroid/bin/debinit && $DEBDROIDMGR_EXEC"
+    $BUSYBOX chroot "$DEBDROIDMGR_ENV" /bin/su - -c "sh /debdroid/bin/debinit && $DEBDROIDMGR_EXEC"
 fi

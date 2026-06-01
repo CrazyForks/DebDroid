@@ -19,25 +19,24 @@ Description:
   A lightweight utility to resize ext2 Debian images for DebDroid environments.
 
 Usage:
-  $0 (+|-)[SIZE]
+  $0 [SIZE]
 
 Arguments:
   SIZE        
-       Target size for the image. Must include a '+' to extend or '-' to reduce.
+       New target size for the image.
        If shrinking, extra data is lost. If extending, the new space reads as zeros.
 
 Size Format:
   - Integer followed by optional unit.
   - Units: K, M, G (powers of 1024), KB, MB, GB (powers of 1000)
   - Binary prefixes supported: KiB=K, MiB=M, GiB=G
-  Examples: +512M, -2G, +10K
+  Examples: 512M, 5G, 10G
 
 Notes:
   - Shrinking the image is not recommended unless necessary.
 
 Examples:
-  $0 +1G     # Extend image by 1 GiB
-  $0 -500M   # Reduce image by 500 MiB"
+  $0 5G    # Extend image to 5 GiB"
 fi
 
 # Checks for a matching architecture
@@ -50,15 +49,24 @@ fi
 
 # Check if the user has root permissions 
 if [ "$(id -u)" -ne 0 ]; then
-    echo "$0: Missing required super-user permisions."
+    echo "$0: Missing required super-user permissions."
     exit 1
 fi
 
 # shellcheck disable=SC2124
 DEBDROIDRSZ_SIZE="$@"
 
-if [ -z "$DEBDROID_INSTALL" ] && echo "$DEBDROIDRSZ_SIZE" | grep -Eq '^[+-][0-9]+([KMG]?B?)?$'; then
+# Checks for a valid size
+if ! echo "$DEBDROIDRSZ_SIZE" | grep -Eq '^[0-9]+([KMG]?B?)?$'; then
     echo "$0: Invalid size: $DEBDROIDRSZ_SIZE"
+    exit 1
+fi
+
+# Ensures the image is not mounted
+if $BUSYBOX mountpoint -q "$DEBDROID_ENV"; then
+    echo "$0: Refusing to resize a mounted image."
+    echo "Terminate all running instances before resizing the image."
+    exit 1
 fi
 
 echo "Resizing $DEBDROID_IMG to $DEBDROIDRSZ_SIZE..."

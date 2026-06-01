@@ -8,16 +8,16 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-# Loads the debdroid environment file
-# shellcheck disable=SC1091
-. /sdcard/debdroid/environment
-
 # Logs script activity to /tmp/init.log
 if [ -z "$DEBDROID_INIT" ]; then
   export DEBDROID_INIT=1
   # shellcheck disable=SC2068
   exec sh -c 'exec "$0" $@ 2>&1 | tee /tmp/debinit.log' "$0" $@
 fi
+
+# Loads the debdroid environment file
+# shellcheck disable=SC1091
+. /sdcard/debdroid/environment
 
 if ! getent group inet > /dev/null 2>&1; then
     groupadd -g 3003 inet

@@ -1,11 +1,18 @@
 # DebDroid - Debian On Android
 
 > [!IMPORTANT]
-> Earlier versions of the project (v1.0) contained a critical issue in `lib/librandom.so` that prevented syscall arguments from being forwarded correctly. This fix ensures that X11, DBus, GLib, and several other programs now run properly within the Debian environment. Users are strongly encouraged to update DebDroid to the latest version. The update does not interfere with existing DebDroid setups.
+> Previous versions (v1.0 and v1.1) contain critical security bugs and missing functionality. Users are strongly encouraged to update DebDroid to the latest version (v1.2). The update does not interfere with existing DebDroid setups.
 
 DebDroid repurposes your old, unused Android devices into compact Debian workstations. It offers an lightweight sandboxed Linux environment meant to replace Raspberry Pi or other single-board computers. Since it runs on top of native Android, you get a full Linux userland for a fraction of the space with no additional hardware required, making it an attractive, plug-and-play solution for developers and sysadmins who need a portable, low-maintenance server on hand.
 
 Check out the [photo gallery](GALLERY.md)!
+
+## Join the Discussions
+
+> ![NOTE]
+> Starting from v1.2, discussions have moved to discord for easier communication with users.
+
+Have questions, ideas, or feedback? Then go ahead and join our **[discord server](https://discord.gg/5aKx85eZc)**!
 
 ## DebDroid is not Termux
 
@@ -126,9 +133,9 @@ Options:
       Executes the specified command script from the command directory.
       Example: debdroid.sh command setup_user
 
-  resize (+|-)[SIZE]
-      Resizes the debian image relative to the specified size.
-      Example: debdroid.sh resize +2G
+  resize [SIZE]
+      Resizes the debian image to the specified size.
+      Example: debdroid.sh resize 5G
 
 Notes:
   - Unrecognized options are treated the same as the 'run' option.
@@ -210,13 +217,16 @@ This will execute the `apt update` command directly in the chroot environment.
 
 ### Image Resizing
 
+> [!WARNING]
+> Starting from v1.2, the size passed to the resizer is no longer relative!
+
 The Debian root filesystem (debian.img) in DebDroid has a fixed size. If you need more space, you can easily expand it using the built-in resize helper.
 
-The following command expands the debian environment by 500MB:
+The following command expands the debian environment to 5GB:
 
 ```bash
 su
-sh /sdcard/debdroid/debdroid.sh resize +500M
+sh /sdcard/debdroid/debdroid.sh resize 5G
 ```
 
 For additional usage instructions, run:
@@ -252,10 +262,6 @@ The following programs have been analyzed and patched to run properly within the
 - `gpg` – GNU Privacy Guard
 - `sshd` – OpenSSH server
 - `snapd` – Snap daemon (WIP)
-
-## Join the Discussions
-
-Have questions, ideas, or feedback? Then go ahead and check out **[discussions](https://github.com/NICUP14/DebDroid/discussions)**!
 
 ## Credits
 

@@ -15,7 +15,7 @@ debdroid_run() {
 }
 
 list_scripts() {
-    $BUSYBOX find "$1" -type f -name "*.sh" -print | $BUSYBOX sed 's/\.sh$//'
+    $BUSYBOX find "$1" -type f -name "*.sh" -exec basename {} .sh \;
 }
 
 # Configures parameters
@@ -45,9 +45,9 @@ Options:
       Executes the specified command script from the command directory.
       Example: debdroid.sh command setup_user
 
-  resize (+|-)[SIZE]
-      Resizes the debian image relative to the specified size.
-      Example: debdroid.sh resize +2G
+  resize [SIZE]
+      Resizes the debian image to the specified size.
+      Example: debdroid.sh resize 5G
 
 Notes:
   - Unrecognized options are treated the same as the 'run' option."
@@ -66,9 +66,17 @@ elif [ "$DEBDROID_OPT" = "list" ]; then
 
 # Handles the "command" option
 elif [ "$DEBDROID_OPT" = "command" ]; then
+    # Rejects path traversal attempts
+    case "$DEBDROID_SUBOPT" in
+        ''|*[!A-Za-z0-9_-]*)
+            echo "$0: Refusing to run an external command via path traversal."
+            exit 1
+            ;;
+    esac
+
     CMD="$DEBDROID_CMD/$DEBDROID_SUBOPT.sh"
     if [ ! -f "$CMD" ]; then
-        echo "No such command script: $CMD." 
+        echo "$0: No such command script: $CMD." 
         exit 1
     fi
 

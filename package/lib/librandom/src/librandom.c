@@ -125,7 +125,7 @@ long syscall(long number, ...)
 int getentropy(void *buf, size_t buflen)
 {
     if (buflen > 256) {
-        errno = EIO;
+        errno = EINVAL;
         return -1;
     }
 
