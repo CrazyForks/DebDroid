@@ -9,7 +9,7 @@ Check out the [photo gallery](GALLERY.md)!
 
 ## Join the Discussions
 
-> ![NOTE]
+> [!NOTE]
 > Starting from v1.2, discussions have moved to discord for easier communication with users.
 
 Have questions, ideas, or feedback? Then go ahead and join our **[discord server](https://discord.gg/5aKx85eZc)**!
