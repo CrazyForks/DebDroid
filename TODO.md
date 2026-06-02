@@ -11,14 +11,15 @@ For DebDroid v1.2:
 - [X] Implement feature-based configuration mechanism for DebDroid.
 - [X] Security check for mounted image in `debdroid_resize.sh`.
 - [X] Implement robust unshare check. (`/proc/self/ns/mnt`)
+- [X] Update README:
+  - Offload large sections into `docs`.
+  - Document and mention the container runtime.
+- [ ] Add preloading and binary mentions to `docs/Security.md`.
+- [ ] Add randomness library mentions to `docs/Patches.md`.
 - [ ] Implement DebDroid PID loggers and locks for more robust checks.
 - [ ] Implement a smart configuration system for `debdroid_mgr.sh`
+- [ ] Document `debdroid_mgr.sh` configuration flags.
 - [ ] Update command functionality for DebDroid.
-- [ ] Update README:
-  - Offload large sections into `docs`.
-  - Add preloading and binary mentions to security considerations.
-  - Document `debdroid_mgr.sh` configuration flags.
-  - Document and mention the container runtime.
 
 For future versions of DebDroid:
 
