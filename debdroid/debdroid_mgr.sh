@@ -13,6 +13,14 @@ CONFIG_ENV_DNSSERVER=1.1.1.1 # Fallback dns server (Cloudflare)
 # Mounts the chroot environment
 start_environment()
 {
+    # Ensures that further modifications run in a private mount namespace
+    mnt=$($BUSYBOX readlink /proc/self/ns/mnt | $BUSYBOX cut -d ':' -f 2)
+    if [ "$DEBDROIDMGR_MNT" = "$mnt" ]; then
+        echo "$0: Failed to create a private mount namespace."
+        echo "Refusing to operate in the host's namespace: risk of system corruption."
+        exit 1
+    fi
+
     # Disables mount propagation
     $BUSYBOX mount --make-rprivate /
 
@@ -136,7 +144,7 @@ start_environment()
         done
     fi
 
-    # Grows the system's shared memory
+    # Grows the system's shared memory capacity
     $BUSYBOX sysctl -w kernel.shmmax="$CONFIG_ENV_SHMMAX" > /dev/null 2>&1
 
     # Creates the /etc/resolv.conf file
@@ -200,7 +208,6 @@ if [ $# -lt 4 ]; then
     exit 1
 fi
 
-
 # Checks for popular busybox install locations
 if [ -z "$BUSYBOX" ]; then
     if [ -x /sbin/busybox ]; then
@@ -230,19 +237,19 @@ shift 4
 DEBDROIDMGR_EXEC=$@
 
 # Pass 1: Sets up the private mount namespace
-if [ -z "$DEBDROIDMGR_MARK" ]; then
-    export DEBDROIDMGR_MARK=1
+if [ -z "$DEBDROIDMGR_MNT" ]; then
+    # Records the mount namespace id
+    DEBDROIDMGR_MNT=$($BUSYBOX readlink /proc/self/ns/mnt | $BUSYBOX cut -d ':' -f 2)
+    export DEBDROIDMGR_MNT
 
-    # Creates a private mount namespace
+    # Runs pass 2 inside a private mount namespace
     # shellcheck disable=SC2086
-    if ! $BUSYBOX unshare --mount sh "$0" "$DEBDROIDMGR_IMG" "$DEBDROIDMGR_ENV" "$DEBDROIDMGR_BIN" "$DEBDROIDMGR_LIB" $DEBDROIDMGR_EXEC; then
-        echo "$0: Failed to create a private mountpoint."
-    fi
+    $BUSYBOX unshare --mount sh "$0" "$DEBDROIDMGR_IMG" "$DEBDROIDMGR_ENV" "$DEBDROIDMGR_BIN" "$DEBDROIDMGR_LIB" $DEBDROIDMGR_EXEC
 
     echo "$0: Stopping environment: \"$DEBDROIDMGR_ENV\""
     stop_environment
 
-    unset DEBDROIDMGR_MARK
+    unset DEBDROIDMGR_MNT
 
 # Pass 2: Sets up the linux filesystem
 else

@@ -10,8 +10,9 @@ For DebDroid v1.2:
 - [X] Update binaries (`truncate`, `resize2fs`, `e2fsck`, `busybox`)
 - [X] Implement feature-based configuration mechanism for DebDroid.
 - [X] Security check for mounted image in `debdroid_resize.sh`.
-- [ ] Implement robust unshare check. (`/proc/self/ns/mnt`)
+- [X] Implement robust unshare check. (`/proc/self/ns/mnt`)
 - [ ] Implement DebDroid PID loggers and locks for more robust checks.
+- [ ] Implement a smart configuration system for `debdroid_mgr.sh`
 - [ ] Update command functionality for DebDroid.
 - [ ] Update README:
   - Offload large sections into `docs`.
