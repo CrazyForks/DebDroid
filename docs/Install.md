@@ -23,8 +23,8 @@ Additional requirements:
 
 Before starting, make sure you have these apps installed on your device:
 
-- [Terminal Emulator](apk/TerminalEmulator.apk) - lets you access Android's command-line interface.
-- [Hacker's Keyboard](apk/HackersKeyboard.apk) - an advanced keyboard that makes typing commands easier.
+- [Terminal Emulator](../apk/TerminalEmulator.apk) - lets you access Android's command-line interface.
+- [Hacker's Keyboard](../apk/HackersKeyboard.apk) - an advanced keyboard that makes typing commands easier.
 - [Root Explorer](https://play.google.com/store/apps/details?id=com.speedsoftware.rootexplorer&hl=en-US) - lets you browse and manage Android files.
 
 Alternatively, you can use a free alternative to Root Explorer, such as [Explorer](https://play.google.com/store/apps/details?id=com.speedsoftware.explorer) or [MiXplorer](https://play.google.com/store/apps/details?id=com.mixplorer.silver).
