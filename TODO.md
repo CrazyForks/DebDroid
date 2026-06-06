@@ -14,17 +14,29 @@ For DebDroid v1.2:
 - [X] Update README:
   - Offload large sections into `docs`.
   - Document and mention the container runtime.
-- [ ] Add preloading and binary mentions to `docs/Security.md`.
-- [ ] Add randomness library mentions to `docs/Patches.md`.
+- [ ] Categorize failures into warnings and errors in `debdroid_mgr.sh`.
+- [ ] Reorganize and refactor preload libraries:
+  - Implement linker fix in `libexec.so`.
+  - Move syscall logic from `librandom.so` and link into `libsyscall.so`.
 - [ ] Implement DebDroid PID loggers and locks for more robust checks.
 - [ ] Implement a smart configuration system for `debdroid_mgr.sh`
-- [ ] Document `debdroid_mgr.sh` configuration flags.
+- [ ] Update docs:
+  - Add x11 xfce4 vnc guide.
+  - Document `debdroid_mgr.sh` configuration flags.
+  - Add preloading and binary mentions to `docs/Security.md`.
+  - Add randomness library mentions to `docs/Patches.md`.
+  - Add ReTerminal mention to `docs/Install.md`.
+
+Planned for v1.3:
+
+- [ ] Add a statically-compiled `strace` binary for issue reporting.
+- [ ] Rescue shell functionality for DebDroid.
+- [ ] Report command functionality for DebDroid. (auto-generated issue reports)
 - [ ] Update command functionality for DebDroid.
+- [ ] Multi-arch support
 
-For future versions of DebDroid:
+Planned for future versions of DebDroid:
 
-- [ ] Multi-arch support (planned for v1.3)
-- [ ] Rescue shell functionality for DebDroid. (planned for v1.3)
 - [ ] GPU acceleration.
 - [ ] Add QoL commands:
   - [X]`command/update`: Environment updater script.
